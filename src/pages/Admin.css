@@ -1,0 +1,157 @@
+/* Page wrapper */
+.admin-page {
+  min-height: 100vh;
+  background: #0f172a;
+  padding: 96px 24px 24px;  /* ⬅ 64px header + 32px breathing space */
+  box-sizing: border-box;
+  color: #e2e8f0;
+}
+
+
+/* Header */
+.admin-header {
+  max-width: 1000px;
+  margin: 0 auto 16px auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc; /* near white */
+}
+
+/* Actions (search, buttons) */
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-input {
+  width: 260px;
+  padding: 8px 10px;
+  border: 1px solid #334155; /* slate-700 */
+  border-radius: 8px;
+  background: #1e293b; /* slate-800 */
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+}
+
+.admin-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.admin-btn {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Card container for the table */
+.admin-card {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: #1e293b; /* dark panel */
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border: 1px solid #334155;
+  overflow: hidden;
+}
+
+/* Table */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table thead th {
+  text-align: left;
+  background: #334155; /* darker header */
+  color: #cbd5e1; /* slate-300 */
+  padding: 12px;
+  border-bottom: 1px solid #475569;
+}
+
+.admin-table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid #334155;
+  color: #f1f5f9;
+}
+
+.admin-empty {
+  max-width: 1000px;
+  margin: 24px auto;
+  color: #94a3b8; /* slate-400 */
+}
+
+/* Status + Role badges */
+.pill {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pill-on  { background: #166534; color: #dcfce7; } /* green-dark bg, light text */
+.pill-off { background: #7f1d1d; color: #fee2e2; } /* red-dark bg, light text */
+
+.chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #334155; color: #f8fafc;
+}
+
+.chip-admin     { background: #1e40af; color: #dbeafe; }
+.chip-student   { background: #164e63; color: #ecfeff; }
+.chip-recruiter { background: #92400e; color: #fef3c7; }
+
+/* Footnote */
+.admin-footnote {
+  padding: 10px 12px 16px 12px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Linkbar */
+.admin-linkbar {
+  max-width: 1000px;
+  margin: 16px auto 0 auto;
+  text-align: right;
+}
+
+.admin-link {
+  color: #60a5fa; /* blue-400 */
+  text-decoration: none;
+  font-size: 13px;
+}
+.admin-link:hover { text-decoration: underline; }
+
+/* Role dropdown */
+.admin-select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 13px;
+}
+.admin-select:focus {
+  outline: none;
+  border-color: #2563eb;
+}

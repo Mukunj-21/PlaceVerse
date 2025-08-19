@@ -1,0 +1,265 @@
+/* === Page background (dark) === */
+.rec-page {
+  min-height: 100vh;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 96px 20px 20px;  /* ⬅ push content below header */
+  box-sizing: border-box;
+  color: #e2e8f0;
+}
+
+
+/* === Centered card === */
+.rec-card {
+  width: 100%;
+  max-width: 900px;
+  background: #1e293b;           /* dark panel */
+  border: 1px solid #334155;     /* subtle border */
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  padding: 20px;
+}
+
+/* Header with title + logout button */
+.rec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rec-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.rec-logout {
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.rec-logout:hover {
+  border-color: #60a5fa;
+}
+
+/* Info / error states */
+.rec-info {
+  color: #94a3b8;
+  font-size: 14px;
+  margin: 12px 0 4px 0;
+}
+.rec-error {
+  color: #fca5a5;
+  font-size: 14px;
+  background: #7f1d1d;
+  border: 1px solid #ef4444;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+/* Section heading */
+.rec-section {
+  margin-top: 8px;
+}
+.rec-subtitle {
+  margin: 8px 0 12px 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #cbd5e1;
+}
+
+/* Grid of rows */
+.rec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;     /* 2 columns on desktop */
+  gap: 10px 16px;
+}
+@media (max-width: 700px) {
+  .rec-grid { grid-template-columns: 1fr; } /* stack on small screens */
+}
+
+/* One labeled row (label + value) */
+.rec-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px;
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.rec-label {
+  color: #94a3b8;        /* muted label */
+  font-size: 13px;
+}
+
+.rec-value {
+  color: #f1f5f9;        /* bright value */
+  font-size: 14px;
+  word-break: break-word;
+}
+
+/* Small note under the grid */
+.rec-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ==== Job form styles (dark) ==== */
+.job-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin-bottom: 10px;
+}
+@media (max-width: 800px) { .job-form { grid-template-columns: 1fr; } }
+
+.job-label { color: #cbd5e1; font-size: 13px; }
+
+.job-input, .job-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+}
+.job-input:focus, .job-textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.25);
+}
+
+.job-textarea { grid-column: 1 / -1; }     /* span both columns */
+.job-btn {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.job-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Grid of my jobs */
+.myjobs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 1000px) { .myjobs-grid { grid-template-columns: 1fr; } }
+
+.myjob-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* Top row: title + status pill */
+.myjob-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.myjob-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+/* Reuse job-meta, job-tag, job-desc styles from earlier */
+
+/* Actions row */
+.myjob-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Buttons (reuse job-btn) + variants */
+.job-btn-ghost {
+  background: #121a2a;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+}
+.job-btn-danger {
+  background: #dc2626; /* red */
+}
+.job-btn-danger:hover { filter: brightness(0.95); }
+
+/* Pills reuse from Admin.css; add here if not already present */
+.pill {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pill-on { background: #166534; color: #dcfce7; }
+.pill-off { background: #7f1d1d; color: #fee2e2; }
+
+/* Make small inputs inside cards compact */
+.myjob-card .job-input, .myjob-card .job-textarea {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.myjob-card .job-textarea { width: 100%; }
+
+/* Applicants table */
+.apps-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.apps-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0f172a;
+}
+
+.apps-table th, .apps-table td {
+  border-bottom: 1px solid #334155;
+  padding: 10px;
+  text-align: left;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.apps-table th {
+  background: #121a2a;
+  color: #cbd5e1;
+  font-weight: 800;
+}
+
+.cell-main { font-weight: 700; }
+.cell-note { max-width: 320px; white-space: pre-wrap; word-break: break-word; }
+
+.link { color: #60a5fa; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+
+.status-actions { display: flex; gap: 6px; flex-wrap: wrap; }
