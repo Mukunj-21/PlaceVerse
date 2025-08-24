@@ -1,29 +1,55 @@
-// src/pages/recruiter/RecruiterLayout.jsx
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
-import "../styles/RecruiterLayout.css"; // Assuming you have some styles for the recruiter layout
+import "../../styles/RecruiterLayout.css"; // correct import
 
 export default function RecruiterLayout() {
+  const location = useLocation();
+
   const doLogout = async () => {
     await signOut(auth);
   };
 
   return (
-    <div className="recruiter-layout">
+    <div className="rec-layout">
       {/* NAVBAR */}
-      <header className="recruiter-navbar">
-        <div className="brand">PlaceVerse – Recruiter</div>
-        <nav>
-          <Link to="/recruiter/profile">Profile</Link>
-          <Link to="/recruiter/jobs">Jobs</Link>
-          <Link to="/recruiter/applicants">Applicants</Link>
+      <header className="rec-nav">
+        <div className="rec-brand">PlaceVerse – Recruiter</div>
+
+        <nav className="rec-links">
+          <Link
+            to="/recruiter/profile"
+            className={`rec-link ${
+              location.pathname.includes("profile") ? "active" : ""
+            }`}
+          >
+            Profile
+          </Link>
+          <Link
+            to="/recruiter/jobs"
+            className={`rec-link ${
+              location.pathname.includes("jobs") ? "active" : ""
+            }`}
+          >
+            Jobs
+          </Link>
+          <Link
+            to="/recruiter/applicants"
+            className={`rec-link ${
+              location.pathname.includes("applicants") ? "active" : ""
+            }`}
+          >
+            Applicants
+          </Link>
         </nav>
-        <button className="logout-btn" onClick={doLogout}>Logout</button>
+
+        <button className="rec-logout" onClick={doLogout}>
+          Logout
+        </button>
       </header>
 
       {/* PAGE CONTENT */}
-      <main className="recruiter-main">
+      <main className="rec-page">
         <Outlet />
       </main>
     </div>

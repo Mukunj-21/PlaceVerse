@@ -1,0 +1,19 @@
+.applicants-page {
+  padding: 1rem;
+}
+
+.applicant-detail {
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  color: #f8fafc;
+}
+
+.applicant-detail a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+.applicant-detail a:hover {
+  text-decoration: underline;
+}

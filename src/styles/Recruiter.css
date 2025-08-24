@@ -1,0 +1,380 @@
+/* === Jobs List === */
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Full-width job card */
+.job-card-full {
+  width: 100%;
+  background: #464866;        /* slate gray card */
+  border: 1px solid #2E9CCA;  /* cyan border accent */
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.job-card-full:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(46, 156, 202, 0.5); /* cyan glow */
+}
+
+/* Header */
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.job-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.job-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc; /* near white */
+}
+
+/* Body */
+.job-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #AAABB8;   /* light gray */
+  font-size: 14px;
+}
+
+/* Pills */
+.pill {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+.pill-on { background: #16a34a; }
+.pill-off { background: #dc2626; }
+
+/* Buttons */
+.job-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #2E9CCA;   /* cyan */
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.job-btn:hover {
+  background: #29648A;  /* teal */
+  transform: scale(1.05);
+}
+
+.job-btn-danger {
+  background: #dc2626;
+}
+.job-btn-danger:hover {
+  background: #7f1d1d;
+}
+
+.job-btn-ghost {
+  background: transparent;
+  border: 1px solid #AAABB8;
+  color: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.job-btn-ghost:hover {
+  background: #2E9CCA22; /* faint cyan */
+  border-color: #2E9CCA;
+}
+
+/* Floating Action Button */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: #2E9CCA;
+  color: white;
+  font-size: 24px;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.fab:hover {
+  background: #29648A;
+  transform: scale(1.08);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+.modal {
+  background: #464866;
+  padding: 22px;
+  border-radius: 14px;
+  width: 500px;
+  max-width: 90%;
+  border: 2px solid #2E9CCA;
+  animation: scaleIn 0.25s ease;
+}
+
+
+
+
+/* === Page Background for Recruiter Section === */
+.recruiter-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #2E9CCA22, transparent 60%),
+              radial-gradient(circle at bottom right, #29648A22, transparent 60%),
+              #25274D;   /* base navy */
+  color: #AAABB8;
+  padding: 90px 24px 24px;   /* leaves space for fixed header */
+  box-sizing: border-box;
+}
+
+
+
+
+/* Floating Action Button (FAB) */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: #2E9CCA;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  font-size: 24px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.fab:hover {
+  width: 140px;               /* expand into pill-shaped button */
+  border-radius: 12px;        /* rounded corners */
+  justify-content: flex-start;
+  padding-left: 18px;
+}
+
+.fab-icon {
+  transition: transform 0.3s ease;
+}
+
+.fab:hover .fab-icon {
+  transform: rotate(90deg);   /* rotate plus when expanded */
+}
+
+.fab-text {
+  margin-left: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.fab:hover .fab-text {
+  opacity: 1;                 /* show text when hovered */
+}
+
+
+/* add job card */
+
+
+
+/* Job Modal */
+.job-modal {
+  background: #464866;       /* slate gray card */
+  border-radius: 14px;
+  padding: 24px;
+  width: 500px;
+  max-width: 95%;
+  border: 2px solid #2E9CCA; /* cyan accent */
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+  animation: scaleIn 0.25s ease;
+  color: #f8fafc;
+}
+
+.job-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row.full {
+  grid-column: span 2;
+}
+
+.form-row label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2E9CCA;  /* cyan labels */
+}
+
+.job-input, .job-textarea {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #2E9CCA66;
+  background: #25274D;
+  color: #f8fafc;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.job-input:focus, .job-textarea:focus {
+  border-color: #2E9CCA;
+  box-shadow: 0 0 0 2px rgba(46, 156, 202, 0.3);
+}
+
+.job-textarea {
+  resize: none;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+
+
+
+
+
+
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+
+/* === Recruiter Profile Page === */
+.recruiter-profile-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #2E9CCA22, transparent 60%),
+              radial-gradient(circle at bottom right, #29648A22, transparent 60%),
+              #25274D;
+  padding: 90px 20px 30px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+/* Profile Card */
+.rec-card {
+  background: #464866;
+  border: 1px solid #2E9CCA;
+  border-radius: 14px;
+  padding: 28px;
+  width: 100%;
+  max-width: 700px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  color: #f1f5f9;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Title */
+.rec-title {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 24px;
+  color: #2E9CCA;
+}
+
+/* Info / Error */
+.rec-info {
+  text-align: center;
+  color: #93c5fd;
+  font-size: 15px;
+}
+.rec-error {
+  text-align: center;
+  color: #f87171;
+  font-weight: 600;
+}
+
+/* Grid of rows */
+.rec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+
+/* Row */
+.rec-row {
+  background: #25274D;
+  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid #2E9CCA33;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.rec-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 156, 202, 0.4);
+}
+
+/* Label + Value */
+.rec-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #93c5fd;
+}
+.rec-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #f8fafc;
+}
+

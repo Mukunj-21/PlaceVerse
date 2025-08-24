@@ -108,14 +108,21 @@ export default function AdminDashboard() {
       <div className="admin-header">
         <h1 className="admin-title">Admin — Manage Users</h1>
         <div className="admin-actions">
-          <input
-            className="admin-input"
-            placeholder="Search by email, name, or role…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+  <button
+    className="admin-top-btn"
+    onClick={() => window.location.href = "/admin/jobs"}
+  >
+    Access Jobs
+  </button>
+  <input
+    className="admin-input"
+    placeholder="Search by email, name, or role…"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+</div>
+
+   </div>
 
       {/* Show error if fetching failed */}
       {err && <div className="admin-error">{err}</div>}

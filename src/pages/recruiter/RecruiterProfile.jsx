@@ -1,10 +1,8 @@
-// src/pages/RecruiterProfile.jsx
-// PURPOSE: Show recruiter’s profile info (read-only for now)
-
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { auth } from "../../firebase";
+import "../../styles/Recruiter.css";
 
 export default function RecruiterProfile() {
   const [loading, setLoading] = useState(true);
@@ -45,22 +43,24 @@ export default function RecruiterProfile() {
   );
 
   return (
-    <div className="rec-card">
-      <h1 className="rec-title">My Profile</h1>
-      {loading && <div className="rec-info">Loading…</div>}
-      {error && <div className="rec-error">{error}</div>}
+    <div className="recruiter-profile-page">
+      <div className="rec-card">
+        <h1 className="rec-title">My Profile</h1>
+        {loading && <div className="rec-info">Loading…</div>}
+        {error && <div className="rec-error">{error}</div>}
 
-      {!loading && !error && profile && (
-        <div className="rec-grid">
-          <Row label="Name">{profile.name}</Row>
-          <Row label="Email">{profile.email}</Row>
-          <Row label="Company">{profile.company}</Row>
-          <Row label="Designation">{profile.title}</Row>
-          <Row label="Phone">{profile.phone}</Row>
-          <Row label="Website">{profile.website}</Row>
-          <Row label="Status">{profile.active ? "Active" : "Inactive"}</Row>
-        </div>
-      )}
+        {!loading && !error && profile && (
+          <div className="rec-grid">
+            <Row label="Name">{profile.name}</Row>
+            <Row label="Email">{profile.email}</Row>
+            <Row label="Company">{profile.company}</Row>
+            <Row label="Designation">{profile.title}</Row>
+            <Row label="Phone">{profile.phone}</Row>
+            <Row label="Website">{profile.website}</Row>
+            <Row label="Status">{profile.active ? "Active" : "Inactive"}</Row>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

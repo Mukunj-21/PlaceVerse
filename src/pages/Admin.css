@@ -43,6 +43,21 @@
   outline: none;
 }
 
+
+/* Center align the Actions column heading */
+.admin-table th:last-child {
+  text-align: center;
+}
+
+
+.admin-table td:last-child {
+  text-align: center;
+}
+
+
+
+
+
 .admin-input:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
@@ -155,3 +170,146 @@
   outline: none;
   border-color: #2563eb;
 }
+
+
+/* Top bar button */
+.admin-top-btn {
+  background: #2563eb;        /* bright blue */
+  color: #fff;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-top-btn:hover {
+  background: #1d4ed8;        /* darker blue */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.admin-top-btn:active {
+  transform: scale(0.97);
+}
+
+
+.action-buttons {
+  display: flex;
+  gap: 12px;          /* space between buttons */
+  flex-wrap: wrap;    /* wrap nicely on smaller screens */
+  justify-content: center;   /* ✅ center horizontally */
+  align-items: center;
+  text-align: center;
+}
+
+
+/* Status buttons */
+/* Status buttons */
+.status-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  min-width: 100px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.1s ease;
+  color: #fff;
+}
+
+/* Default (grey state) */
+.status-btn.grey {
+  background: #475569;
+}
+
+/* Active colors */
+.status-btn.green { background: #16a34a; }   /* Open */
+.status-btn.red   { background: #dc2626; }   /* Close */
+.status-btn.yellow{ background: #ca8a04; }  /* Save for Later */
+
+/* ✅ Hover states */
+.status-btn.grey:hover {
+  opacity: 0.9;
+}
+.status-btn:hover.green,
+.status-btn.grey:hover:nth-child(1) { /* Open button */
+  background: #16a34a;
+}
+.status-btn:hover.red,
+.status-btn.grey:hover:nth-child(2) { /* Close button */
+  background: #dc2626;
+}
+.status-btn:hover.yellow,
+.status-btn.grey:hover:nth-child(3) { /* Save for Later button */
+  background: #ca8a04;
+}
+
+
+.status-btn.grey {
+  background: #475569; /* slate */
+}
+.status-btn.green {
+  background: #16a34a; /* green */
+}
+.status-btn.red {
+  background: #dc2626; /* red */
+}
+.status-btn.yellow {
+  background: #ca8a04; /* amber */
+}
+
+.status-btn:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+
+
+/* for the stats pie chart */
+
+/* Stats button */
+.stats-btn {
+background: #2E9CCA;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;     /* ✅ slightly smaller */
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.stats-btn:hover {
+  background: #29648A;
+  transform: scale(1.05);
+}
+
+/* Stats Modal */
+.stats-modal {
+background: #1e293b;
+  padding: 24px;
+  border-radius: 16px;
+  width: 550px;
+  max-width: 95%;
+  border: 2px solid #2E9CCA;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  animation: fadeInScale 0.3s ease-out;
+}
+
+
+.admin-jobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;   /* ✅ adds breathing room */
+  padding-right: 6px;    /* keep button away from edge */
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
