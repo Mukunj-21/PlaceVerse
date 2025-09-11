@@ -1,28 +1,35 @@
+// src/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
+
+// Public
 import Login from "./pages/Login.jsx";
 import Reset from "./pages/Reset.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
+
+// Shared/Guards
 import NotAuthorized from "./pages/NotAuthorized.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
-// NEW imports for recruiter
+// Admin
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminJobs from "./pages/AdminJobs.jsx";
+import NewRecruiter from "./pages/NewRecruiter.jsx";
+
+// Recruiter (nested)
 import RecruiterLayout from "./pages/recruiter/RecruiterLayout.jsx";
 import RecruiterProfile from "./pages/recruiter/RecruiterProfile";
 import RecruiterJobs from "./pages/recruiter/RecruiterJobs";
 import RecruiterApplicants from "./pages/recruiter/RecruiterApplicants";
+import JobDetail from "./pages/recruiter/JobDetail.jsx";
+import JobApplicants from "./pages/recruiter/JobApplicants.jsx";
 
-// Student imports
+// Student
 import StudentDashboard from "./pages/StudentDashboard.jsx";
 import StudentProfile from "./pages/StudentProfile.jsx";
 import StudentApplications from "./pages/StudentApplications.jsx";
 import StudentNotifications from "./pages/StudentNotifications.jsx";
 
-// Job details + applicants
-import JobDetail from "./pages/recruiter/JobDetail.jsx";
-import JobApplicants from "./pages/recruiter/JobApplicants.jsx";
-
-// adminjobs import
-import AdminJobs from "./pages/AdminJobs.jsx";
+// Optional: Finish email-link auth (create if using email-link sign-in)
+import FinishEmailLink from "./pages/FinishEmailLink.jsx";
 
 export default function App() {
   return (
@@ -30,11 +37,12 @@ export default function App() {
       {/* default → go to /login */}
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* public pages */}
+      {/* public */}
       <Route path="/login" element={<Login />} />
       <Route path="/reset" element={<Reset />} />
+      <Route path="/finish-signin" element={<FinishEmailLink />} />
 
-      {/* protected routes */}
+      {/* admin */}
       <Route
         path="/admin"
         element={
@@ -43,17 +51,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
-      {/* student routes */}
-      <Route
-        path="/student"
-        element={
-          <ProtectedRoute allow={["student"]}>
-            <StudentDashboard />
-          </ProtectedRoute>
-        }
-      />
-
       <Route
         path="/admin/jobs"
         element={
@@ -62,8 +59,32 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/new-recruiter"
+        element={
+          <ProtectedRoute allow={["admin"]}>
+            <NewRecruiter />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/jobs/:jobId/applications"
+        element={
+          <ProtectedRoute allow={["admin"]}>
+            <JobApplicants />
+          </ProtectedRoute>
+        }
+      />
 
-
+      {/* student */}
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute allow={["student"]}>
+            <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/student/profile"
         element={
@@ -89,7 +110,7 @@ export default function App() {
         }
       />
 
-      {/* recruiter parent route with nested pages */}
+      {/* recruiter (nested) */}
       <Route
         path="/recruiter"
         element={
@@ -98,20 +119,34 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        <Route index element={<Navigate to="profile" replace />} />
         <Route path="profile" element={<RecruiterProfile />} />
         <Route path="jobs" element={<RecruiterJobs />} />
         <Route path="applicants" element={<RecruiterApplicants />} />
-        <Route index element={<Navigate to="profile" replace />} />
       </Route>
 
-      {/* job detail + applicants */}
-      <Route path="/recruiter/jobs/:jobId" element={<JobDetail />} />
-      <Route path="/recruiter/jobs/:jobId/applicants" element={<JobApplicants />} />
+      {/* recruiter job detail + applicants */}
+      <Route
+        path="/recruiter/jobs/:jobId"
+        element={
+          <ProtectedRoute allow={["recruiter"]}>
+            <JobDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recruiter/jobs/:jobId/applicants"
+        element={
+          <ProtectedRoute allow={["recruiter"]}>
+            <JobApplicants />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* not authorized page */}
+      {/* misc */}
       <Route path="/not-authorized" element={<NotAuthorized />} />
 
-      {/* catch-all → send to login */}
+      {/* catch-all */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

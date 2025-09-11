@@ -1,51 +1,59 @@
-// StudentNotifications.jsx
+// src/pages/StudentNotifications.jsx
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
-import { auth, db } from "../firebase";
-import AppHeader from "../components/AppHeader";
-import { useNavigate } from "react-router-dom";
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
+import AppHeader from "../components/AppHeader.jsx";
 
 export default function StudentNotifications() {
-  const [notifs, setNotifs] = useState([]);
-  const navigate = useNavigate();
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchNotifs = async () => {
-      const q = query(
-        collection(db, "notifications"),
-        where("userId", "==", auth.currentUser.uid),
-        orderBy("createdAt", "desc")
-      );
-      const snap = await getDocs(q);
-      setNotifs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    };
-    fetchNotifs();
+    const q = query(
+      collection(db, "jobNotes"),
+      where("pushed", "==", true),
+      orderBy("pushedAt", "desc") // admin sets pushedAt on push
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // If some legacy notes don’t have pushedAt, keep a stable order:
+        rows.sort((a, b) => {
+          const A = a.pushedAt?.toDate?.() || a.createdAt?.toDate?.() || 0;
+          const B = b.pushedAt?.toDate?.() || b.createdAt?.toDate?.() || 0;
+          return B - A;
+        });
+        setNotes(rows);
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+    return () => unsub();
   }, []);
 
-  return (
-    <div className="stu-page">
-      <AppHeader />
-      <div className="stu-card">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="stu-title">Notifications</h1>
-          <button className="stu-btn" onClick={() => navigate("/student")}>
-            ← Back to Dashboard
-          </button>
-        </div>
+  const fmt = (ts) => (ts?.toDate ? ts.toDate().toLocaleString() : "");
 
-        {notifs.length === 0 ? (
-          <div className="stu-info">No notifications.</div>
+  return (
+    <div className="student-page">
+      <AppHeader />
+      <div className="student-wrap">
+        <h1 className="stu-title">Notifications</h1>
+        {loading ? (
+          <div className="stu-info">Loading…</div>
+        ) : notes.length === 0 ? (
+          <div className="stu-info">No announcements yet.</div>
         ) : (
-          <ul className="space-y-3 mt-4">
-            {notifs.map((n) => (
-              <li key={n.id} className="p-3 rounded bg-slate-800">
-                <div>{n.message}</div>
-                <div className="text-xs text-slate-400">
-                  {new Date(n.createdAt.seconds * 1000).toLocaleString()}
-                </div>
-              </li>
+          <div className="stu-grid">
+            {notes.map((n) => (
+              <div key={n.id} className="stu-notification">
+                <div style={{ fontWeight: 800 }}>{n.title || "Announcement"}</div>
+                <div style={{ marginTop: 6 }}>{n.message || n.text || "—"}</div>
+                <div className="stu-notification-time">{fmt(n.pushedAt || n.createdAt)}</div>
+                {n.company && <div className="stu-info" style={{ marginTop: 6 }}>Company: {n.company}</div>}
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

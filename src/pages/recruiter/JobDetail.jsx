@@ -1,7 +1,7 @@
 // src/pages/recruiter/JobDetail.jsx
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { auth, db } from "../../firebase"; 
+import { auth, db } from "../../firebase";
 import {
   doc,
   getDoc,
@@ -14,13 +14,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-// ❌ Commenting out storage for now
-// import {
-//   getStorage,
-//   ref,
-//   uploadBytes,
-//   getDownloadURL,
-// } from "firebase/storage";
+// Storage reserved for later
+// import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import "../../styles/JobDetail.css";
 
@@ -28,39 +23,47 @@ export default function JobDetail() {
   const { jobId } = useParams();
   const navigate = useNavigate();
 
-  // const storage = getStorage(); // ❌ commented
+  // const storage = getStorage();
 
   // ---- state ----
   const [job, setJob] = useState(null);
+  const [jobLoading, setJobLoading] = useState(true);
+
   const [notes, setNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
 
   // modal state for new announcement
   const [openModal, setOpenModal] = useState(false);
+  const [newTitle, setNewTitle] = useState(""); // title field
   const [newNote, setNewNote] = useState("");
-  // const [file, setFile] = useState(null); // ❌ commented
+  // const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // ---- load job ----
   useEffect(() => {
-    const load = async () => {
-      const s = await getDoc(doc(db, "jobs", jobId));
-      if (s.exists()) setJob({ id: s.id, ...s.data() });
-    };
-    load();
+    (async () => {
+      setJobLoading(true);
+      try {
+        const s = await getDoc(doc(db, "jobs", jobId));
+        if (s.exists()) setJob({ id: s.id, ...s.data() });
+        else setJob(null);
+      } finally {
+        setJobLoading(false);
+      }
+    })();
   }, [jobId]);
 
   // ---- load announcements (newest first) ----
   useEffect(() => {
-    const loadNotes = async () => {
+    (async () => {
       setLoadingNotes(true);
       try {
-        const q = query(
+        const qn = query(
           collection(db, "jobNotes"),
           where("jobId", "==", jobId),
           orderBy("createdAt", "desc")
         );
-        const snap = await getDocs(q);
+        const snap = await getDocs(qn);
         setNotes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (err) {
         console.error("Failed to load notes:", err);
@@ -68,22 +71,19 @@ export default function JobDetail() {
       } finally {
         setLoadingNotes(false);
       }
-    };
-    loadNotes();
+    })();
   }, [jobId]);
 
   // ---- add announcement ----
   const handleAdd = async (e) => {
     e.preventDefault();
-    // if (!newNote.trim() && !file) return; // ❌ old
-    if (!newNote.trim()) return; // ✅ only check for text
+    if (!newNote.trim() && !newTitle.trim()) return;
 
     setSaving(true);
     // let fileUrl = null;
     // let fileName = null;
 
     try {
-      // ❌ Commented file upload
       // if (file) {
       //   fileName = file.name;
       //   const fileRef = ref(storage, `jobNotes/${jobId}/${Date.now()}-${file.name}`);
@@ -91,31 +91,29 @@ export default function JobDetail() {
       //   fileUrl = await getDownloadURL(fileRef);
       // }
 
-      const refDoc = await addDoc(collection(db, "jobNotes"), {
+      const payload = {
         jobId,
         recruiterId: auth.currentUser?.uid || null,
-        message: newNote || null,
-        // fileUrl: fileUrl || null, // ❌ commented
-        // fileName: fileName || null, // ❌ commented
+        company: job?.company || "",
+        title: newTitle.trim() || "Announcement",
+        message: newNote.trim() || null,
+        // fileUrl: fileUrl || null,
+        // fileName: fileName || null,
+        pushed: false,
         createdAt: serverTimestamp(),
-      });
+      };
 
-      // optimistic insert at top
+      const refDoc = await addDoc(collection(db, "jobNotes"), payload);
+
+      // optimistic prepend (approx createdAt with local time)
       setNotes((prev) => [
-        {
-          id: refDoc.id,
-          jobId,
-          recruiterId: auth.currentUser?.uid || null,
-          message: newNote || null,
-          // fileUrl: fileUrl || null,
-          // fileName: fileName || null,
-          createdAt: new Date(),
-        },
+        { id: refDoc.id, ...payload, createdAt: new Date() },
         ...prev,
       ]);
 
+      setNewTitle("");
       setNewNote("");
-      // setFile(null); // ❌ commented
+      // setFile(null);
       setOpenModal(false);
     } catch (err) {
       console.error(err);
@@ -129,6 +127,25 @@ export default function JobDetail() {
     if (!ts) return "—";
     return ts.toDate ? ts.toDate().toLocaleString() : new Date(ts).toLocaleString();
   };
+
+  if (jobLoading) {
+    return (
+      <div className="jd-wrap">
+        <div className="jd-info">Loading job…</div>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="jd-wrap">
+        <div className="jd-info">Job not found.</div>
+        <button className="jd-btn" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="jd-wrap">
@@ -175,17 +192,22 @@ export default function JobDetail() {
           {notes.map((n) => (
             <div className="jd-note" key={n.id}>
               <div className="jd-note-top">
-                <span className="jd-note-time">{formatDate(n.createdAt)}</span>
+                <span className="jd-note-title">{n.title || "Announcement"}</span>
+                <div className="jd-note-right">
+                  {n.pushed ? (
+                    <span className="jd-chip jd-chip-sent">Sent</span>
+                  ) : (
+                    <span className="jd-chip jd-chip-pending">Pending</span>
+                  )}
+                  <span className="jd-note-time">{formatDate(n.createdAt)}</span>
+                </div>
               </div>
+
               {n.message && <p className="jd-note-msg">{n.message}</p>}
-              {/* ❌ Hide file link until storage enabled */}
-              {/* {n.fileUrl && (
-                <a
-                  className="jd-link"
-                  href={n.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+
+              {/* file link reserved for later
+              {n.fileUrl && (
+                <a className="jd-link" href={n.fileUrl} target="_blank" rel="noopener noreferrer">
                   📂 {n.fileName || "Attachment"}
                 </a>
               )} */}
@@ -205,16 +227,18 @@ export default function JobDetail() {
           <div className="jd-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="jd-h3">New Announcement</h3>
             <form onSubmit={handleAdd} className="jd-form">
+              <input
+                className="jd-input"
+                placeholder="Short title (e.g., Round 1 schedule)"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+              />
               <textarea
                 placeholder="Write announcement…"
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
               />
-              {/* ❌ Hide file input until storage enabled */}
-              {/* <input
-                type="file"
-                onChange={(e) => setFile(e.target.files[0] || null)}
-              /> */}
+              {/* <input type="file" onChange={(e) => setFile(e.target.files[0] || null)} /> */}
               <div className="jd-modal-actions">
                 <button
                   type="button"
