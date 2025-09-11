@@ -1,3 +1,336 @@
+// // src/pages/StudentDashboard.jsx
+// import { useEffect, useMemo, useRef, useState } from "react";
+// import {
+//   getFirestore,
+//   collection,
+//   query,
+//   orderBy,
+//   where,
+//   onSnapshot,
+//   setDoc,
+//   doc,
+//   addDoc,
+//   serverTimestamp,
+// } from "firebase/firestore";
+// import { auth } from "../firebase";
+// import { onAuthStateChanged } from "firebase/auth";
+// import AppHeader from "../components/AppHeader.jsx";
+// import { Link } from "react-router-dom";
+// import "./Student.css";
+
+// export default function StudentDashboard() {
+//   const db = getFirestore();
+
+//   // --- UI state ---
+//   const [stats, setStats] = useState({ companies: 0, jobs: 0, applied: 0 });
+//   const [jobs, setJobs] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   const [search, setSearch] = useState("");
+//   const [filter, setFilter] = useState({ location: "" });
+//   const [sortBy, setSortBy] = useState("newest");
+
+//   // --- auth & per-user state ---
+//   const [uid, setUid] = useState(null);
+//   const [authReady, setAuthReady] = useState(false);
+//   const [appliedIds, setAppliedIds] = useState(new Set());
+//   const [savedIds, setSavedIds] = useState(new Set());
+
+//   // prevent double apply
+//   const applyingFor = useRef(new Set());
+
+//   // --- helpers ---
+//   const toDate = (v) => (v?.toDate ? v.toDate() : v ? new Date(v) : null);
+//   const endOfDay = (d) =>
+//     new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+//   const isPastDeadline = (job) => {
+//     const d = toDate(job.deadline);
+//     return d ? new Date() > endOfDay(d) : false;
+//   };
+
+//   const isOpen = (job) => job?.applicationsOpen === true && !isPastDeadline(job);
+
+//   const isNew = (job) => {
+//     const created = toDate(job.createdAt);
+//     return created && new Date() - created < 7 * 24 * 60 * 60 * 1000;
+//   };
+
+//   const deadlineSoon = (job) => {
+//     const d = toDate(job.deadline);
+//     return d && d - new Date() < 3 * 24 * 60 * 60 * 1000 && !isPastDeadline(job);
+//   };
+
+//   // --- auth state ---
+//   useEffect(() => {
+//     const unsub = onAuthStateChanged(auth, (user) => {
+//       setUid(user ? user.uid : null);
+//       setAuthReady(true);
+//     });
+//     return () => unsub();
+//   }, []);
+
+//   // --- jobs + per-user subscriptions ---
+//   useEffect(() => {
+//     if (!authReady) return;
+
+//     // ⬅️ Revert to: subscribe to ALL jobs (order by createdAt), then filter locally with isOpen()
+//     const jobsQ = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
+//     const unsubJobs = onSnapshot(
+//       jobsQ,
+//       (snap) => {
+//         const arr = [];
+//         const companies = new Set();
+//         snap.forEach((docu) => {
+//           const data = docu.data();
+//           arr.push({ id: docu.id, ...data });
+//           if (data.company) companies.add(data.company);
+//         });
+//         setJobs(arr);
+//         // Stats count only OPEN jobs (like before)
+//         const openJobs = arr.filter((j) => isOpen(j));
+//         setStats((s) => ({ ...s, companies: new Set(openJobs.map(j => j.company)).size, jobs: openJobs.length }));
+//         setLoading(false);
+//       },
+//       () => setLoading(false)
+//     );
+
+//     let unsubApps = () => {};
+//     let unsubSaved = () => {};
+
+//     if (uid) {
+//       const appsQ = query(
+//         collection(db, "applications"),
+//         where("studentId", "==", uid)
+//       );
+//       unsubApps = onSnapshot(appsQ, (snap) => {
+//         const ids = new Set();
+//         snap.forEach((d) => ids.add(d.data().jobId));
+//         setAppliedIds(ids);
+//         setStats((s) => ({ ...s, applied: ids.size }));
+//       });
+
+//       const savedQ = query(
+//         collection(db, "savedJobs"),
+//         where("studentId", "==", uid)
+//       );
+//       unsubSaved = onSnapshot(savedQ, (snap) => {
+//         const ids = new Set();
+//         snap.forEach((d) => ids.add(d.data().jobId));
+//         setSavedIds(ids);
+//       });
+//     }
+
+//     return () => {
+//       unsubJobs();
+//       unsubApps();
+//       unsubSaved();
+//     };
+//   }, [authReady, uid, db]);
+
+//   // --- actions ---
+//   const handleApply = async (job) => {
+//     if (!uid || !job?.id) return;
+//     if (appliedIds.has(job.id) || !isOpen(job)) return;
+//     if (applyingFor.current.has(job.id)) return;
+
+//     applyingFor.current.add(job.id);
+//     try {
+//       await addDoc(collection(db, "applications"), {
+//         jobId: job.id,
+//         studentId: uid,
+//         createdAt: serverTimestamp(),
+//         status: "applied",
+//       });
+//       // optimistic
+//       setAppliedIds((prev) => new Set([...prev, job.id]));
+//       setStats((s) => ({ ...s, applied: (s.applied || 0) + 1 }));
+//     } catch (e) {
+//       console.error(e);
+//       alert("Could not apply. Please try again.");
+//     } finally {
+//       applyingFor.current.delete(job.id);
+//     }
+//   };
+
+//   const handleBookmark = async (jobId) => {
+//     if (!uid || savedIds.has(jobId)) return;
+//     try {
+//       await setDoc(doc(db, "savedJobs", `${uid}_${jobId}`), {
+//         jobId,
+//         studentId: uid,
+//         createdAt: serverTimestamp(),
+//       });
+//       setSavedIds((prev) => new Set([...prev, jobId]));
+//     } catch (e) {
+//       console.error(e);
+//       alert("Could not save job. Please try again.");
+//     }
+//   };
+
+//   // --- filter + sort ---
+//   const visibleJobs = useMemo(() => {
+//     // show only OPEN jobs (like before)
+//     let arr = jobs.filter((j) => isOpen(j));
+
+//     if (search) {
+//       const q = search.toLowerCase();
+//       arr = arr.filter(
+//         (j) =>
+//           (j.title || "").toLowerCase().includes(q) ||
+//           (j.company || "").toLowerCase().includes(q)
+//       );
+//     }
+//     if (filter.location) {
+//       arr = arr.filter((j) => j.location === filter.location);
+//     }
+//     if (sortBy === "newest") {
+//       arr.sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0));
+//     } else if (sortBy === "deadline") {
+//       arr.sort((a, b) => (toDate(a.deadline) || 0) - (toDate(b.deadline) || 0));
+//     }
+//     return arr;
+//   }, [jobs, search, filter, sortBy]);
+
+//   // --- render ---
+//   return (
+//     <div className="sd-root">
+//       <AppHeader />
+
+//       {/* Hero */}
+//       <div className="sd-hero">
+//         <div>
+//           <h1 className="sd-title">Find Your Next Opportunity</h1>
+//           <p className="sd-kicker">Search jobs and apply directly</p>
+//         </div>
+//         <div className="sd-linkbar">
+//           <Link to="/student/applications" className="sd-link">My Applications</Link>
+//           <Link to="/student/notifications" className="sd-link">Notifications</Link>
+//         </div>
+//       </div>
+
+//       {/* Search */}
+//       <div className="sd-filters">
+//         <input
+//           className="sd-input"
+//           type="text"
+//           placeholder="Search jobs or companies"
+//           value={search}
+//           onChange={(e) => setSearch(e.target.value)}
+//         />
+//       </div>
+
+//       {/* Stats */}
+//       <div className="sd-stats">
+//         <div className="sd-stat">
+//           <div className="sd-stat-icon">🏢</div>
+//           <div className="sd-stat-num">{stats.companies}</div>
+//           <div className="sd-stat-label">Companies</div>
+//         </div>
+//         <div className="sd-stat">
+//           <div className="sd-stat-icon">📋</div>
+//           <div className="sd-stat-num">{stats.jobs}</div>
+//           <div className="sd-stat-label">Jobs</div>
+//         </div>
+//         <div className="sd-stat">
+//           <div className="sd-stat-icon">✅</div>
+//           <div className="sd-stat-num">{stats.applied}</div>
+//           <div className="sd-stat-label">Applied</div>
+//         </div>
+//       </div>
+
+//       {/* Jobs */}
+//       <div className="sd-grid">
+//         {loading ? (
+//           <>
+//             <div className="sd-skel-card">
+//               <div className="skel skel-title" />
+//               <div className="skel skel-line" />
+//               <div className="skel skel-line" />
+//               <div className="skel skel-btns" />
+//             </div>
+//             <div className="sd-skel-card">
+//               <div className="skel skel-title" />
+//               <div className="skel skel-line" />
+//               <div className="skel skel-line" />
+//               <div className="skel skel-btns" />
+//             </div>
+//           </>
+//         ) : visibleJobs.length === 0 ? (
+//           <div className="sd-empty">
+//             <div className="sd-empty-emoji">🔎</div>
+//             No jobs found
+//           </div>
+//         ) : (
+//           visibleJobs.map((j) => {
+//             const applied = appliedIds.has(j.id);
+//             const saved = savedIds.has(j.id);
+
+//             return (
+//               <div key={j.id} className="sd-card">
+//                 <div className="sd-card-top">
+//                   <div>
+//                     <div className="sd-title-sm">{j.title}</div>
+//                     <div className="sd-sub">{j.company}</div>
+//                   </div>
+//                   <div className="sd-top-right">
+//                     {isNew(j) && <span className="badge-new">NEW</span>}
+//                   </div>
+//                 </div>
+
+//                 <div className="sd-meta">
+//                   {j.ctc && <span className="chip chip-ctc">💰 {j.ctc}</span>}
+//                   {j.location && <span className="chip chip-loc">📍 {j.location}</span>}
+//                   {j.deadline && (
+//                     <span
+//                       className={`chip ${deadlineSoon(j) ? "chip-deadline-soon" : "chip-deadline"}`}
+//                     >
+//                       ⏳ {j.deadline?.toDate
+//                         ? j.deadline.toDate().toLocaleDateString()
+//                         : new Date(j.deadline).toLocaleDateString()}
+//                     </span>
+//                   )}
+//                   <span className="chip">Applications open</span>
+//                 </div>
+
+//                 {j.description && <p className="sd-desc">{j.description}</p>}
+
+//                 <div className="sd-card-actions">
+//                   <button
+//                     disabled={applied || applyingFor.current.has(j.id)}
+//                     className={`sd-btn ${applied ? "sd-btn-disabled" : ""}`}
+//                     onClick={() => handleApply(j)}
+//                     title={applied ? "Already applied" : "Apply now"}
+//                   >
+//                     {applied ? "Applied" : "Apply now"}
+//                   </button>
+
+//                   <button
+//                     className={`sd-btn-outline ${saved ? "sd-btn-disabled" : ""}`}
+//                     onClick={() => handleBookmark(j.id)}
+//                     disabled={saved}
+//                     title={saved ? "Saved" : "Save job"}
+//                   >
+//                     {saved ? "Saved" : "Save Job"}
+//                   </button>
+
+//                   <Link to={`/student/jobs/${j.id}`} className="sd-btn-outline" style={{ textAlign: "center" }}>
+//                     View Details
+//                   </Link>
+//                 </div>
+//               </div>
+//             );
+//           })
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
 // src/pages/StudentDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import {

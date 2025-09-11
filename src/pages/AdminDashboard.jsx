@@ -13,35 +13,28 @@ import {
 } from "firebase/firestore";
 import "./Admin.css";
 import AppHeader from "../components/AppHeader.jsx";
+import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
-  // === React state variables ===
-  const [users, setUsers] = useState([]);     // list of all users from Firestore
-  const [loading, setLoading] = useState(true); // true while fetching data
-  const [err, setErr] = useState("");          // store error message if any
-  const [search, setSearch] = useState("");    // search bar input
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [search, setSearch] = useState("");
 
-  const db = getFirestore(); // get Firestore instance
+  const db = getFirestore();
 
-
-  // === Fetch users when component loads ===
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Function to fetch users from Firestore
-  const loadUsers = async () => {
+  async function loadUsers() {
     setLoading(true);
     setErr("");
     try {
-      // Query: get all users ordered by email
       const q = query(collection(db, "users"), orderBy("email"));
       const snap = await getDocs(q);
-
-      // Map each Firestore doc into a JS object {id, ...data}
       const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-      // Store into state
       setUsers(rows);
     } catch (e) {
       setErr("Failed to load users.");
@@ -49,12 +42,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  // === Filtered list based on search bar ===
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return users; // if search is empty, return all
+    if (!q) return users;
     return users.filter((u) => {
       const email = (u.email || "").toLowerCase();
       const name = (u.name || "").toLowerCase();
@@ -63,16 +55,16 @@ export default function AdminDashboard() {
     });
   }, [users, search]);
 
-  // === Toggle Active/Inactive for a user ===
-  const toggleActive = async (u) => {
-    // ask for confirmation
-    if (!window.confirm(`Are you sure you want to ${u.active ? "deactivate" : "activate"} ${u.email}?`)) return;
+  async function toggleActive(u) {
+    if (
+      !window.confirm(
+        `Are you sure you want to ${u.active ? "deactivate" : "activate"} ${u.email}?`
+      )
+    )
+      return;
 
     try {
-      // update Firestore field "active"
       await updateDoc(doc(db, "users", u.id), { active: !u.active });
-
-      // update local state so UI changes instantly
       setUsers((prev) =>
         prev.map((x) => (x.id === u.id ? { ...x, active: !u.active } : x))
       );
@@ -80,19 +72,15 @@ export default function AdminDashboard() {
       alert("Failed to update active status.");
       console.error(e);
     }
-  };
+  }
 
-  // === Change role of a user ===
-  const changeRole = async (u, newRole) => {
-    if (newRole === u.role) return; // no change if same role
-
-    if (!window.confirm(`Change role of ${u.email} from ${u.role} to ${newRole}?`)) return;
+  async function changeRole(u, newRole) {
+    if (newRole === u.role) return;
+    if (!window.confirm(`Change role of ${u.email} from ${u.role} to ${newRole}?`))
+      return;
 
     try {
-      // update Firestore field "role"
       await updateDoc(doc(db, "users", u.id), { role: newRole });
-
-      // update local state
       setUsers((prev) =>
         prev.map((x) => (x.id === u.id ? { ...x, role: newRole } : x))
       );
@@ -100,34 +88,66 @@ export default function AdminDashboard() {
       alert("Failed to change role.");
       console.error(e);
     }
-  };
+  }
+
+  const total = users.length;
+  const admins = users.filter((u) => u.role === "admin").length;
+  const students = users.filter((u) => u.role === "student").length;
+  const recruiters = users.filter((u) => u.role === "recruiter").length;
+  const activeCount = users.filter((u) => u.active).length;
 
   return (
     <div className="admin-page">
-        <AppHeader />
+      <AppHeader />
+
       <div className="admin-header">
         <h1 className="admin-title">Admin — Manage Users</h1>
+
         <div className="admin-actions">
-  <button
-    className="admin-top-btn"
-    onClick={() => window.location.href = "/admin/jobs"}
-  >
-    Access Jobs
-  </button>
-  <input
-    className="admin-input"
-    placeholder="Search by email, name, or role…"
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-  />
-</div>
+          <Link to="/admin/jobs" className="admin-top-btn">
+            Access Jobs
+          </Link>
+          <Link to="/admin/new-recruiter" className="admin-top-btn primary">
+            New Recruiter
+          </Link>
+          <button className="admin-top-btn" onClick={loadUsers} disabled={loading}>
+            {loading ? "Refreshing…" : "Refresh"}
+          </button>
+          <input
+            className="admin-input"
+            placeholder="Search by email, name, or role…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
 
-   </div>
+      {/* Stats Summary Cards */}
+      <div className="stats-grid">
+        <div className="stats-card blue">
+          <div className="stats-value">{total}</div>
+          <div className="stats-label">Total Users</div>
+        </div>
+        <div className="stats-card green">
+          <div className="stats-value">{activeCount}</div>
+          <div className="stats-label">Active</div>
+        </div>
+        <div className="stats-card indigo">
+          <div className="stats-value">{admins}</div>
+          <div className="stats-label">Admins</div>
+        </div>
+        <div className="stats-card amber">
+          <div className="stats-value">{students}</div>
+          <div className="stats-label">Students</div>
+        </div>
+        <div className="stats-card purple">
+          <div className="stats-value">{recruiters}</div>
+          <div className="stats-label">Recruiters</div>
+        </div>
+      </div>
 
-      {/* Show error if fetching failed */}
       {err && <div className="admin-error">{err}</div>}
 
-      {/* Main content: loading, empty, or table */}
       {loading ? (
         <div className="admin-empty">Loading users…</div>
       ) : filtered.length === 0 ? (
@@ -141,7 +161,7 @@ export default function AdminDashboard() {
                 <th>Name</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th>Actions</th> {/* extra column for buttons */}
+                <th style={{ width: 160 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -149,8 +169,6 @@ export default function AdminDashboard() {
                 <tr key={u.id}>
                   <td>{u.email || "—"}</td>
                   <td>{u.name || "—"}</td>
-
-                  {/* Role: dropdown to change */}
                   <td>
                     <select
                       value={u.role}
@@ -162,8 +180,6 @@ export default function AdminDashboard() {
                       <option value="recruiter">Recruiter</option>
                     </select>
                   </td>
-
-                  {/* Status: Active/Inactive badge */}
                   <td>
                     {u.active ? (
                       <span className="pill pill-on">Active</span>
@@ -171,13 +187,8 @@ export default function AdminDashboard() {
                       <span className="pill pill-off">Inactive</span>
                     )}
                   </td>
-
-                  {/* Action: Activate/Deactivate button */}
                   <td>
-                    <button
-                      className="admin-btn"
-                      onClick={() => toggleActive(u)}
-                    >
+                    <button className="admin-btn" onClick={() => toggleActive(u)}>
                       {u.active ? "Deactivate" : "Activate"}
                     </button>
                   </td>
