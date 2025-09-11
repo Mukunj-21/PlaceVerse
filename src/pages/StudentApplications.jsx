@@ -5,6 +5,7 @@
 // import "./Student.css";
 
 // import {
+//   getFirestore,
 //   collection,
 //   query,
 //   where,
@@ -12,20 +13,17 @@
 //   doc,
 //   getDoc,
 //   onSnapshot,
-//   orderBy,
-//   limit,
 // } from "firebase/firestore";
-// import { auth, db } from "../firebase";
+// import { auth } from "../firebase";
 
-// // ---------- helpers ----------
+// // --- helpers ---
 // const toDate = (tsOrMs) => {
 //   if (!tsOrMs) return null;
-//   if (tsOrMs.toDate) return tsOrMs.toDate();
+//   if (tsOrMs.toDate) return tsOrMs.toDate(); // Firestore Timestamp
 //   const ms = typeof tsOrMs === "number" ? tsOrMs : Date.parse(tsOrMs);
 //   return isNaN(ms) ? null : new Date(ms);
 // };
 // const niceDate = (d) => (d ? d.toLocaleString() : "—");
-// const niceDateTime = (v) => (v ? toDate(v)?.toLocaleString() : "—");
 
 // const statusClass = (s) => {
 //   const key = (s || "").toLowerCase().replaceAll(" ", "");
@@ -44,18 +42,18 @@
 // };
 
 // export default function StudentApplications() {
+//   const db = getFirestore();
+
 //   const [loading, setLoading] = useState(true);
-//   const [apps, setApps] = useState([]);
-//   const [saved, setSaved] = useState([]);
+//   const [apps, setApps] = useState([]);         // [{id, ...application, job}]
+//   const [saved, setSaved] = useState([]);       // saved jobs from user bookmarks
 //   const [error, setError] = useState("");
 
 //   const [selectedApp, setSelectedApp] = useState(null);
 //   const [notes, setNotes] = useState([]);
 //   const [notesLoading, setNotesLoading] = useState(false);
 
-//   const [latestNoteByJob, setLatestNoteByJob] = useState({});
-
-//   // Load applications
+//   // Load applications (without orderBy to avoid index), sort in JS
 //   useEffect(() => {
 //     const loadApps = async () => {
 //       setLoading(true);
@@ -63,29 +61,30 @@
 //       try {
 //         const uid = auth.currentUser?.uid;
 //         if (!uid) {
-//           setApps([]);
 //           setLoading(false);
 //           return;
 //         }
 
-//         const qApps = query(collection(db, "applications"), where("studentId", "==", uid));
+//         const qApps = query(
+//           collection(db, "applications"),
+//           where("studentId", "==", uid)
+//         );
 //         const snap = await getDocs(qApps);
 //         const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+//         // join job doc
 //         const withJobs = await Promise.all(
 //           rows.map(async (a) => {
 //             try {
 //               const jsnap = await getDoc(doc(db, "jobs", a.jobId));
-//               return {
-//                 ...a,
-//                 job: jsnap.exists() ? { id: jsnap.id, ...jsnap.data() } : null,
-//               };
+//               return { ...a, job: jsnap.exists() ? { id: jsnap.id, ...jsnap.data() } : null };
 //             } catch {
 //               return { ...a, job: null };
 //             }
 //           })
 //         );
 
+//         // sort newest first by createdAt (client-side)
 //         withJobs.sort((a, b) => {
 //           const ta = toDate(a.createdAt)?.getTime() || 0;
 //           const tb = toDate(b.createdAt)?.getTime() || 0;
@@ -100,11 +99,10 @@
 //         setLoading(false);
 //       }
 //     };
-
 //     loadApps();
-//   }, []);
+//   }, [db]);
 
-//   // Load saved jobs
+//   // Load saved jobs from users/{uid}/bookmarks (matches your working data)
 //   useEffect(() => {
 //     const loadSaved = async () => {
 //       try {
@@ -116,7 +114,7 @@
 
 //         const jobs = [];
 //         for (const d of snap.docs) {
-//           const jobRef = doc(db, "jobs", d.id);
+//           const jobRef = doc(db, "jobs", d.id); // bookmark docId == jobId
 //           const jobSnap = await getDoc(jobRef);
 //           if (jobSnap.exists()) jobs.push({ id: jobSnap.id, ...jobSnap.data() });
 //         }
@@ -126,88 +124,50 @@
 //         setSaved([]);
 //       }
 //     };
-
 //     loadSaved();
-//   }, []);
+//   }, [db]);
 
-//   const appliedApps = useMemo(() => apps.filter((a) => a.job), [apps]);
+//   // Modal open: subscribe to jobNotes in real-time, sort client-side newest→oldest
+//   const openApp = useCallback(
+//     (app) => {
+//       setSelectedApp(app);
+//       setNotes([]);
+//       setNotesLoading(true);
 
-//   // Latest announcement preview per job
-//   useEffect(() => {
-//     const loadLatestForJobs = async () => {
-//       const jobIds = Array.from(
-//         new Set(
-//           (appliedApps || []).map((a) => a.job?.id || a.jobId).filter(Boolean)
-//         )
+//       const q = query(collection(db, "jobNotes"), where("jobId", "==", app.jobId));
+//       const unsub = onSnapshot(
+//         q,
+//         (snap) => {
+//           const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+//           items.sort((a, b) => {
+//             const da = toDate(a.createdAt)?.getTime() || 0;
+//             const dbb = toDate(b.createdAt)?.getTime() || 0;
+//             return dbb - da;
+//           });
+//           setNotes(items);
+//           setNotesLoading(false);
+//         },
+//         (err) => {
+//           console.error("Announcements load error:", err);
+//           setNotes([]);
+//           setNotesLoading(false);
+//         }
 //       );
-//       if (jobIds.length === 0) {
-//         setLatestNoteByJob({});
-//         return;
-//       }
 
-//       const result = {};
-//       for (const jid of jobIds) {
-//         try {
-//           const q1 = query(
-//             collection(db, "jobNotes"),
-//             where("jobId", "==", jid),
-//             where("pushed", "==", true),
-//             orderBy("pushedAt", "desc"),
-//             limit(1)
-//           );
-//           const s1 = await getDocs(q1);
-//           if (!s1.empty) {
-//             result[jid] = { id: s1.docs[0].id, ...s1.docs[0].data() };
-//             continue;
-//           }
-//         } catch (_) {}
-//       }
-//       setLatestNoteByJob(result);
-//     };
+//       const onEsc = (e) => e.key === "Escape" && setSelectedApp(null);
+//       document.addEventListener("keydown", onEsc);
 
-//     loadLatestForJobs();
-//   }, [appliedApps]);
-
-//   const openApp = useCallback((app) => {
-//     setSelectedApp(app);
-//     setNotes([]);
-//     setNotesLoading(true);
-
-//     const qNotes = query(
-//       collection(db, "jobNotes"),
-//       where("jobId", "==", app.jobId),
-//       where("pushed", "==", true)
-//     );
-
-//     const unsub = onSnapshot(
-//       qNotes,
-//       (snap) => {
-//         const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-//         items.sort((a, b) => {
-//           const ta = toDate(a.pushedAt)?.getTime() || toDate(a.createdAt)?.getTime() || 0;
-//           const tb = toDate(b.pushedAt)?.getTime() || toDate(b.createdAt)?.getTime() || 0;
-//           return tb - ta;
-//         });
-//         setNotes(items);
-//         setNotesLoading(false);
-//       },
-//       (err) => {
-//         console.error("Announcements load error:", err);
-//         setNotes([]);
-//         setNotesLoading(false);
-//       }
-//     );
-
-//     const onEsc = (e) => e.key === "Escape" && setSelectedApp(null);
-//     document.addEventListener("keydown", onEsc);
-
-//     return () => {
-//       document.removeEventListener("keydown", onEsc);
-//       unsub && unsub();
-//     };
-//   }, []);
+//       return () => {
+//         document.removeEventListener("keydown", onEsc);
+//         unsub && unsub();
+//       };
+//     },
+//     [db]
+//   );
 
 //   const closeModal = () => setSelectedApp(null);
+
+//   const appliedApps = useMemo(() => apps.filter((a) => a.job), [apps]);
 
 //   return (
 //     <div className="student-page">
@@ -232,9 +192,6 @@
 //             {appliedApps.map((a) => {
 //               const j = a.job || {};
 //               const deadline = toDate(j.deadline);
-//               const latest = latestNoteByJob[j.id || a.jobId];
-//               const pushedWhen = latest?.pushedAt || latest?.createdAt;
-
 //               return (
 //                 <div key={a.id} className="app-card" onClick={() => openApp(a)} role="button">
 //                   <div className="app-card-head">
@@ -253,27 +210,8 @@
 //                     {deadline && <div>⏳ {deadline.toLocaleDateString()}</div>}
 //                   </div>
 
-//                   {latest && (
-//                     <div className="stu-notification" style={{ marginTop: 10 }}>
-//                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-//                         <span className="status-chip st-blue">Announcement</span>
-//                         <div className="stu-notification-time">
-//                           {niceDateTime(pushedWhen)}
-//                         </div>
-//                       </div>
-//                       <div style={{ fontWeight: 800 }}>
-//                         {latest.title || "Announcement"}
-//                       </div>
-//                       <div style={{ marginTop: 4 }}>
-//                         {latest.message || latest.text || "—"}
-//                       </div>
-//                     </div>
-//                   )}
-
 //                   {a.createdAt && (
-//                     <div className="app-foot">
-//                       Applied on {niceDate(toDate(a.createdAt))}
-//                     </div>
+//                     <div className="app-foot">Applied on {niceDate(toDate(a.createdAt))}</div>
 //                   )}
 //                 </div>
 //               );
@@ -350,9 +288,7 @@
 //                     <div className="timeline-dot" />
 //                     <div className="timeline-content">
 //                       {n.message && <div className="timeline-text">{n.message}</div>}
-//                       <div className="timeline-date">
-//                         {niceDateTime(n.pushedAt || n.createdAt)}
-//                       </div>
+//                       <div className="timeline-date">{niceDate(toDate(n.createdAt))}</div>
 //                     </div>
 //                   </div>
 //                 ))}
@@ -373,7 +309,6 @@
 
 
 
-
 // src/pages/StudentApplications.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
@@ -381,7 +316,6 @@ import AppHeader from "../components/AppHeader.jsx";
 import "./Student.css";
 
 import {
-  getFirestore,
   collection,
   query,
   where,
@@ -389,17 +323,20 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  orderBy,
+  limit,
 } from "firebase/firestore";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 
-// --- helpers ---
+// ---------- helpers ----------
 const toDate = (tsOrMs) => {
   if (!tsOrMs) return null;
-  if (tsOrMs.toDate) return tsOrMs.toDate(); // Firestore Timestamp
+  if (tsOrMs.toDate) return tsOrMs.toDate();
   const ms = typeof tsOrMs === "number" ? tsOrMs : Date.parse(tsOrMs);
   return isNaN(ms) ? null : new Date(ms);
 };
 const niceDate = (d) => (d ? d.toLocaleString() : "—");
+const niceDateTime = (v) => (v ? toDate(v)?.toLocaleString() : "—");
 
 const statusClass = (s) => {
   const key = (s || "").toLowerCase().replaceAll(" ", "");
@@ -418,18 +355,18 @@ const statusClass = (s) => {
 };
 
 export default function StudentApplications() {
-  const db = getFirestore();
-
   const [loading, setLoading] = useState(true);
-  const [apps, setApps] = useState([]);         // [{id, ...application, job}]
-  const [saved, setSaved] = useState([]);       // saved jobs from user bookmarks
+  const [apps, setApps] = useState([]);
+  const [saved, setSaved] = useState([]);
   const [error, setError] = useState("");
 
   const [selectedApp, setSelectedApp] = useState(null);
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
 
-  // Load applications (without orderBy to avoid index), sort in JS
+  const [latestNoteByJob, setLatestNoteByJob] = useState({});
+
+  // Load applications
   useEffect(() => {
     const loadApps = async () => {
       setLoading(true);
@@ -437,30 +374,29 @@ export default function StudentApplications() {
       try {
         const uid = auth.currentUser?.uid;
         if (!uid) {
+          setApps([]);
           setLoading(false);
           return;
         }
 
-        const qApps = query(
-          collection(db, "applications"),
-          where("studentId", "==", uid)
-        );
+        const qApps = query(collection(db, "applications"), where("studentId", "==", uid));
         const snap = await getDocs(qApps);
         const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        // join job doc
         const withJobs = await Promise.all(
           rows.map(async (a) => {
             try {
               const jsnap = await getDoc(doc(db, "jobs", a.jobId));
-              return { ...a, job: jsnap.exists() ? { id: jsnap.id, ...jsnap.data() } : null };
+              return {
+                ...a,
+                job: jsnap.exists() ? { id: jsnap.id, ...jsnap.data() } : null,
+              };
             } catch {
               return { ...a, job: null };
             }
           })
         );
 
-        // sort newest first by createdAt (client-side)
         withJobs.sort((a, b) => {
           const ta = toDate(a.createdAt)?.getTime() || 0;
           const tb = toDate(b.createdAt)?.getTime() || 0;
@@ -475,10 +411,11 @@ export default function StudentApplications() {
         setLoading(false);
       }
     };
-    loadApps();
-  }, [db]);
 
-  // Load saved jobs from users/{uid}/bookmarks (matches your working data)
+    loadApps();
+  }, []);
+
+  // Load saved jobs
   useEffect(() => {
     const loadSaved = async () => {
       try {
@@ -490,7 +427,7 @@ export default function StudentApplications() {
 
         const jobs = [];
         for (const d of snap.docs) {
-          const jobRef = doc(db, "jobs", d.id); // bookmark docId == jobId
+          const jobRef = doc(db, "jobs", d.id);
           const jobSnap = await getDoc(jobRef);
           if (jobSnap.exists()) jobs.push({ id: jobSnap.id, ...jobSnap.data() });
         }
@@ -500,50 +437,88 @@ export default function StudentApplications() {
         setSaved([]);
       }
     };
+
     loadSaved();
-  }, [db]);
-
-  // Modal open: subscribe to jobNotes in real-time, sort client-side newest→oldest
-  const openApp = useCallback(
-    (app) => {
-      setSelectedApp(app);
-      setNotes([]);
-      setNotesLoading(true);
-
-      const q = query(collection(db, "jobNotes"), where("jobId", "==", app.jobId));
-      const unsub = onSnapshot(
-        q,
-        (snap) => {
-          const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          items.sort((a, b) => {
-            const da = toDate(a.createdAt)?.getTime() || 0;
-            const dbb = toDate(b.createdAt)?.getTime() || 0;
-            return dbb - da;
-          });
-          setNotes(items);
-          setNotesLoading(false);
-        },
-        (err) => {
-          console.error("Announcements load error:", err);
-          setNotes([]);
-          setNotesLoading(false);
-        }
-      );
-
-      const onEsc = (e) => e.key === "Escape" && setSelectedApp(null);
-      document.addEventListener("keydown", onEsc);
-
-      return () => {
-        document.removeEventListener("keydown", onEsc);
-        unsub && unsub();
-      };
-    },
-    [db]
-  );
-
-  const closeModal = () => setSelectedApp(null);
+  }, []);
 
   const appliedApps = useMemo(() => apps.filter((a) => a.job), [apps]);
+
+  // Latest announcement preview per job
+  useEffect(() => {
+    const loadLatestForJobs = async () => {
+      const jobIds = Array.from(
+        new Set(
+          (appliedApps || []).map((a) => a.job?.id || a.jobId).filter(Boolean)
+        )
+      );
+      if (jobIds.length === 0) {
+        setLatestNoteByJob({});
+        return;
+      }
+
+      const result = {};
+      for (const jid of jobIds) {
+        try {
+          const q1 = query(
+            collection(db, "jobNotes"),
+            where("jobId", "==", jid),
+            where("pushed", "==", true),
+            orderBy("pushedAt", "desc"),
+            limit(1)
+          );
+          const s1 = await getDocs(q1);
+          if (!s1.empty) {
+            result[jid] = { id: s1.docs[0].id, ...s1.docs[0].data() };
+            continue;
+          }
+        } catch (_) {}
+      }
+      setLatestNoteByJob(result);
+    };
+
+    loadLatestForJobs();
+  }, [appliedApps]);
+
+  const openApp = useCallback((app) => {
+    setSelectedApp(app);
+    setNotes([]);
+    setNotesLoading(true);
+
+    const qNotes = query(
+      collection(db, "jobNotes"),
+      where("jobId", "==", app.jobId),
+      where("pushed", "==", true)
+    );
+
+    const unsub = onSnapshot(
+      qNotes,
+      (snap) => {
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        items.sort((a, b) => {
+          const ta = toDate(a.pushedAt)?.getTime() || toDate(a.createdAt)?.getTime() || 0;
+          const tb = toDate(b.pushedAt)?.getTime() || toDate(b.createdAt)?.getTime() || 0;
+          return tb - ta;
+        });
+        setNotes(items);
+        setNotesLoading(false);
+      },
+      (err) => {
+        console.error("Announcements load error:", err);
+        setNotes([]);
+        setNotesLoading(false);
+      }
+    );
+
+    const onEsc = (e) => e.key === "Escape" && setSelectedApp(null);
+    document.addEventListener("keydown", onEsc);
+
+    return () => {
+      document.removeEventListener("keydown", onEsc);
+      unsub && unsub();
+    };
+  }, []);
+
+  const closeModal = () => setSelectedApp(null);
 
   return (
     <div className="student-page">
@@ -568,6 +543,9 @@ export default function StudentApplications() {
             {appliedApps.map((a) => {
               const j = a.job || {};
               const deadline = toDate(j.deadline);
+              const latest = latestNoteByJob[j.id || a.jobId];
+              const pushedWhen = latest?.pushedAt || latest?.createdAt;
+
               return (
                 <div key={a.id} className="app-card" onClick={() => openApp(a)} role="button">
                   <div className="app-card-head">
@@ -586,8 +564,27 @@ export default function StudentApplications() {
                     {deadline && <div>⏳ {deadline.toLocaleDateString()}</div>}
                   </div>
 
+                  {latest && (
+                    <div className="stu-notification" style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span className="status-chip st-blue">Announcement</span>
+                        <div className="stu-notification-time">
+                          {niceDateTime(pushedWhen)}
+                        </div>
+                      </div>
+                      <div style={{ fontWeight: 800 }}>
+                        {latest.title || "Announcement"}
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        {latest.message || latest.text || "—"}
+                      </div>
+                    </div>
+                  )}
+
                   {a.createdAt && (
-                    <div className="app-foot">Applied on {niceDate(toDate(a.createdAt))}</div>
+                    <div className="app-foot">
+                      Applied on {niceDate(toDate(a.createdAt))}
+                    </div>
                   )}
                 </div>
               );
@@ -664,7 +661,9 @@ export default function StudentApplications() {
                     <div className="timeline-dot" />
                     <div className="timeline-content">
                       {n.message && <div className="timeline-text">{n.message}</div>}
-                      <div className="timeline-date">{niceDate(toDate(n.createdAt))}</div>
+                      <div className="timeline-date">
+                        {niceDateTime(n.pushedAt || n.createdAt)}
+                      </div>
                     </div>
                   </div>
                 ))}
