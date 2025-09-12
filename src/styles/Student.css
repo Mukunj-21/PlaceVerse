@@ -693,27 +693,3 @@
 
 .sd-empty { text-align:center; color:#94a3b8; padding: 24px 8px; }
 .sd-empty-emoji { font-size: 28px; margin-bottom: 8px; }
-
-
-
-
-
-/* Make announcements scrollable inside modal */
-.timeline-wrapper {
-  max-height: 300px;  /* adjust as you like */
-  overflow-y: auto;
-  padding-right: 6px; /* space for scrollbar */
-}
-
-.timeline-wrapper::-webkit-scrollbar {
-  width: 6px;
-}
-
-.timeline-wrapper::-webkit-scrollbar-thumb {
-  background: #4b5563; /* grey */
-  border-radius: 6px;
-}
-
-.timeline-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
