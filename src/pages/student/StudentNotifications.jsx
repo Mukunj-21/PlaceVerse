@@ -1,8 +1,8 @@
 // src/pages/StudentNotifications.jsx
 import { useEffect, useState } from "react";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
-import AppHeader from "../components/AppHeader.jsx";
+import { db } from "../../firebase.js";
+import AppHeader from "../../components/AppHeader.jsx";
 
 export default function StudentNotifications() {
   const [notes, setNotes] = useState([]);

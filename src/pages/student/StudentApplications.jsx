@@ -1,8 +1,8 @@
 // src/pages/StudentApplications.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import AppHeader from "../components/AppHeader.jsx";
-import "./Student.css";
+import AppHeader from "../../components/AppHeader.jsx";
+import "/src/styles/Student.css";
 
 import {
   getFirestore,
@@ -14,7 +14,7 @@ import {
   getDoc,
   onSnapshot,
 } from "firebase/firestore";
-import { auth } from "../firebase";
+import { auth } from "../../firebase.js";
 
 // --- helpers ---
 const toDate = (tsOrMs) => {

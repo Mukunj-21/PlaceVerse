@@ -2,17 +2,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Public
-import Login from "./pages/Login.jsx";
-import Reset from "./pages/Reset.jsx";
+import Login from "./pages/login/Login.jsx";
+import Reset from "./pages/login/Reset.jsx";
 
 // Shared/Guards
-import NotAuthorized from "./pages/NotAuthorized.jsx";
+import NotAuthorized from "./pages/login/NotAuthorized.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 // Admin
-import AdminDashboard from "./pages/AdminDashboard.jsx";
-import AdminJobs from "./pages/AdminJobs.jsx";
-import NewRecruiter from "./pages/NewRecruiter.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import AdminJobs from "./pages/admin/AdminJobs.jsx";
+import NewRecruiter from "./pages/admin/NewRecruiter.jsx";
 
 // Recruiter (nested)
 import RecruiterLayout from "./pages/recruiter/RecruiterLayout.jsx";
@@ -23,13 +23,13 @@ import JobDetail from "./pages/recruiter/JobDetail.jsx";
 import JobApplicants from "./pages/recruiter/JobApplicants.jsx";
 
 // Student
-import StudentDashboard from "./pages/StudentDashboard.jsx";
-import StudentProfile from "./pages/StudentProfile.jsx";
-import StudentApplications from "./pages/StudentApplications.jsx";
-import StudentNotifications from "./pages/StudentNotifications.jsx";
+import StudentDashboard from "./pages/student/StudentDashboard.jsx";
+import StudentProfile from "./pages/student/StudentProfile.jsx";
+import StudentApplications from "./pages/student/StudentApplications.jsx";
+import StudentNotifications from "./pages/student/StudentNotifications.jsx";
 
 // Optional: Finish email-link auth (create if using email-link sign-in)
-import FinishEmailLink from "./pages/FinishEmailLink.jsx";
+import FinishEmailLink from "./pages/login/FinishEmailLink.jsx";
 
 export default function App() {
   return (
