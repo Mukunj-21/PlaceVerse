@@ -1,8 +1,14 @@
 // src/pages/StudentApplications.jsx
 import { useEffect, useMemo, useState, useCallback } from "react";
+<<<<<<< Updated upstream:src/pages/student/StudentApplications.jsx
 import { Link } from "react-router-dom";
 import AppHeader from "../../components/AppHeader.jsx";
 import "/src/styles/Student.css";
+=======
+import { Link, useNavigate } from "react-router-dom";
+import AppHeader from "../components/AppHeader.jsx";
+import "./Student.css";
+>>>>>>> Stashed changes:src/pages/StudentApplications.jsx
 
 import {
   getFirestore,
@@ -13,13 +19,14 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  orderBy,
 } from "firebase/firestore";
 import { auth } from "../../firebase.js";
 
 // --- helpers ---
 const toDate = (tsOrMs) => {
   if (!tsOrMs) return null;
-  if (tsOrMs.toDate) return tsOrMs.toDate(); // Firestore Timestamp
+  if (tsOrMs.toDate) return tsOrMs.toDate();
   const ms = typeof tsOrMs === "number" ? tsOrMs : Date.parse(tsOrMs);
   return isNaN(ms) ? null : new Date(ms);
 };
@@ -43,17 +50,18 @@ const statusClass = (s) => {
 
 export default function StudentApplications() {
   const db = getFirestore();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [apps, setApps] = useState([]);         // [{id, ...application, job}]
-  const [saved, setSaved] = useState([]);       // saved jobs from user bookmarks
+  const [apps, setApps] = useState([]); 
+  const [saved, setSaved] = useState([]);
   const [error, setError] = useState("");
 
   const [selectedApp, setSelectedApp] = useState(null);
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
 
-  // Load applications (without orderBy to avoid index), sort in JS
+  // ---- Load applications ----
   useEffect(() => {
     const loadApps = async () => {
       setLoading(true);
@@ -72,7 +80,6 @@ export default function StudentApplications() {
         const snap = await getDocs(qApps);
         const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        // join job doc
         const withJobs = await Promise.all(
           rows.map(async (a) => {
             try {
@@ -84,7 +91,6 @@ export default function StudentApplications() {
           })
         );
 
-        // sort newest first by createdAt (client-side)
         withJobs.sort((a, b) => {
           const ta = toDate(a.createdAt)?.getTime() || 0;
           const tb = toDate(b.createdAt)?.getTime() || 0;
@@ -102,7 +108,7 @@ export default function StudentApplications() {
     loadApps();
   }, [db]);
 
-  // Load saved jobs from users/{uid}/bookmarks (matches your working data)
+  // ---- Load saved jobs ----
   useEffect(() => {
     const loadSaved = async () => {
       try {
@@ -114,7 +120,7 @@ export default function StudentApplications() {
 
         const jobs = [];
         for (const d of snap.docs) {
-          const jobRef = doc(db, "jobs", d.id); // bookmark docId == jobId
+          const jobRef = doc(db, "jobs", d.id);
           const jobSnap = await getDoc(jobRef);
           if (jobSnap.exists()) jobs.push({ id: jobSnap.id, ...jobSnap.data() });
         }
@@ -127,23 +133,24 @@ export default function StudentApplications() {
     loadSaved();
   }, [db]);
 
-  // Modal open: subscribe to jobNotes in real-time, sort client-side newest→oldest
+  // ---- Modal open: subscribe to pushed announcements ----
   const openApp = useCallback(
     (app) => {
       setSelectedApp(app);
       setNotes([]);
       setNotesLoading(true);
 
-      const q = query(collection(db, "jobNotes"), where("jobId", "==", app.jobId));
+      const qNotes = query(
+        collection(db, "jobNotes"),
+        where("jobId", "==", app.jobId),
+        where("pushed", "==", true),
+        orderBy("pushedAt", "desc")
+      );
+
       const unsub = onSnapshot(
-        q,
+        qNotes,
         (snap) => {
           const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          items.sort((a, b) => {
-            const da = toDate(a.createdAt)?.getTime() || 0;
-            const dbb = toDate(b.createdAt)?.getTime() || 0;
-            return dbb - da;
-          });
           setNotes(items);
           setNotesLoading(false);
         },
@@ -176,7 +183,10 @@ export default function StudentApplications() {
       <div className="student-wrap">
         <div className="header-row">
           <h1 className="stu-title">My Applications</h1>
-          <Link to="/student" className="stu-back">← Back to Dashboard</Link>
+          {/* Back button: ensure correct path */}
+          <button className="stu-back" onClick={() => navigate("/student")}>
+            ← Back to Dashboard
+          </button>
         </div>
 
         {error && <div className="stu-error">{error}</div>}
@@ -282,16 +292,20 @@ export default function StudentApplications() {
             ) : notes.length === 0 ? (
               <div className="stu-dim">No announcements yet.</div>
             ) : (
-              <div className="timeline">
-                {notes.map((n) => (
-                  <div className="timeline-item" key={n.id}>
-                    <div className="timeline-dot" />
-                    <div className="timeline-content">
-                      {n.message && <div className="timeline-text">{n.message}</div>}
-                      <div className="timeline-date">{niceDate(toDate(n.createdAt))}</div>
+              <div className="timeline-wrapper">
+                <div className="timeline">
+                  {notes.map((n) => (
+                    <div className="timeline-item" key={n.id}>
+                      <div className="timeline-dot" />
+                      <div className="timeline-content">
+                        {n.message && <div className="timeline-text">{n.message}</div>}
+                        <div className="timeline-date">
+                          {niceDate(toDate(n.pushedAt || n.createdAt))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 

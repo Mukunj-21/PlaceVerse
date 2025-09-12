@@ -47,8 +47,8 @@ export default function AdminJobs() {
   const [activeIndex, setActiveIndex] = useState(null);
 
   // announcements overview
-  const [latestNoteByJob, setLatestNoteByJob] = useState({}); // jobId -> latest note
-  const [pendingByJob, setPendingByJob] = useState({}); // jobId -> count of !pushed
+  const [latestNoteByJob, setLatestNoteByJob] = useState({});
+  const [pendingByJob, setPendingByJob] = useState({});
 
   // drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -69,9 +69,7 @@ export default function AdminJobs() {
         const jid = n.jobId;
         if (!jid) return;
 
-        // first encountered (desc) = latest
         if (!(jid in latest)) latest[jid] = n;
-
         if (!n.pushed) pendingCounts[jid] = (pendingCounts[jid] || 0) + 1;
       });
 
@@ -91,7 +89,7 @@ export default function AdminJobs() {
         const snap = await getDocs(qJobs);
         const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        // auto-close any jobs that are open but past deadline
+        // auto-close expired
         const toClose = rows.filter((j) => j.applicationsOpen === true && isPastDeadline(j));
         if (toClose.length) {
           await Promise.all(
@@ -106,13 +104,11 @@ export default function AdminJobs() {
           );
         }
 
-        // reflect in UI (even before the write roundtrips)
         const normalized = rows.map((j) =>
           isPastDeadline(j) ? { ...j, applicationsOpen: false, status: "closed" } : j
         );
         setJobs(normalized);
 
-        // after jobs, fetch announcements overview
         await fetchAnnouncementsOverview();
       } catch (e) {
         console.error("Failed to load jobs", e);
@@ -123,7 +119,7 @@ export default function AdminJobs() {
     fetchJobs();
   }, []);
 
-  // ---------- Toggle applicationsOpen (guard deadline) ----------
+  // ---------- Toggle applicationsOpen ----------
   const setApplicationsOpen = async (jobId, open) => {
     const job = jobs.find((x) => x.id === jobId);
     if (!job) return;
@@ -133,7 +129,6 @@ export default function AdminJobs() {
       return;
     }
 
-    // optimistic update
     setJobs((prev) =>
       prev.map((j) =>
         j.id === jobId
@@ -181,6 +176,7 @@ export default function AdminJobs() {
     setDrawerNotes([]);
   };
 
+  // ✅ FIX: Ensure pushedAt is set when pushing
   const pushAnnouncement = async (note) => {
     if (!drawerJob) return;
     if (!window.confirm("Push this announcement to students?")) return;
@@ -192,12 +188,12 @@ export default function AdminJobs() {
         pushedBy: auth.currentUser?.uid || null,
       });
 
-      // update drawer list
       setDrawerNotes((prev) =>
-        prev.map((n) => (n.id === note.id ? { ...n, pushed: true, pushedAt: new Date() } : n))
+        prev.map((n) =>
+          n.id === note.id ? { ...n, pushed: true, pushedAt: new Date() } : n
+        )
       );
 
-      // refresh overview badges & latest
       await fetchAnnouncementsOverview();
     } catch (e) {
       console.error("Failed to push announcement", e);
@@ -236,7 +232,7 @@ export default function AdminJobs() {
         {/* ===== Company Cards (Announcements Overview) ===== */}
         <div className="company-cards">
           {jobs
-            .filter((j) => latestNoteByJob[j.id]) // only jobs with at least one note
+            .filter((j) => latestNoteByJob[j.id])
             .map((j) => {
               const latest = latestNoteByJob[j.id];
               const pending = pendingByJob[j.id] || 0;
@@ -273,10 +269,10 @@ export default function AdminJobs() {
                           <span className="pending-chip">Pending</span>
                         )}
                         <span className="time-chip">
-                          {latest.createdAt?.toDate
+                          {latest.pushedAt?.toDate
+                            ? latest.pushedAt.toDate().toLocaleString()
+                            : latest.createdAt?.toDate
                             ? latest.createdAt.toDate().toLocaleString()
-                            : latest.createdAt
-                            ? new Date(latest.createdAt).toLocaleString()
                             : ""}
                         </span>
                       </div>
@@ -314,7 +310,6 @@ export default function AdminJobs() {
                 return (
                   <tr key={j.id}>
                     <td>{j.title}</td>
-
                     <td>
                       <div className="company-cell">
                         <span>{j.company}</span>
@@ -332,10 +327,8 @@ export default function AdminJobs() {
                         )}
                       </div>
                     </td>
-
                     <td>{j.location}</td>
                     <td>{j.ctc}</td>
-
                     <td>
                       {j.deadline?.toDate
                         ? j.deadline.toDate().toLocaleDateString()
@@ -343,20 +336,16 @@ export default function AdminJobs() {
                         ? new Date(j.deadline).toLocaleDateString()
                         : "-"}
                     </td>
-
                     <td>{j.description}</td>
-
                     <td style={{ fontWeight: 600, color: isOpen ? "#16a34a" : "#dc2626" }}>
                       {isOpen ? "Open" : "Closed"}
                     </td>
-
                     <td>
                       <div className="action-buttons">
                         <button
                           className={`status-btn ${isOpen ? "green" : "grey"}`}
                           onClick={() => setApplicationsOpen(j.id, true)}
-                          disabled={isOpen || isPastDeadline(j)} // cannot open past deadline
-                          title="Mark applications as OPEN"
+                          disabled={isOpen || isPastDeadline(j)}
                         >
                           Open
                         </button>
@@ -364,21 +353,18 @@ export default function AdminJobs() {
                           className={`status-btn ${!isOpen ? "red" : "grey"}`}
                           onClick={() => setApplicationsOpen(j.id, false)}
                           disabled={!isOpen}
-                          title="Mark applications as CLOSED"
                         >
                           Close
                         </button>
                         <button
                           className="status-btn grey"
                           onClick={() => openDrawerForJob(j)}
-                          title="View announcements"
                         >
                           View Announcements
                         </button>
                         <Link
                           className="status-btn grey"
                           to={`/admin/jobs/${j.id}/applications`}
-                          title="View applications for this job"
                         >
                           View Applications
                         </Link>
@@ -391,92 +377,6 @@ export default function AdminJobs() {
           </table>
         )}
       </div>
-
-      {/* ===== Stats Modal ===== */}
-      {showStats && (
-        <div className="modal-overlay">
-          <div className="modal stats-modal">
-            <h2 className="admin-title">Job Status Statistics</h2>
-
-            <div
-              style={{
-                fontSize: "14px",
-                color: "#f1f5f9",
-                marginBottom: "10px",
-                textAlign: "right",
-              }}
-            >
-              Open: {statusCounts.open} | Closed: {statusCounts.closed}
-            </div>
-
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={110}
-                  paddingAngle={5}
-                  isAnimationActive={true}
-                  animationDuration={800}
-                  animationEasing="ease-out"
-                  activeIndex={activeIndex}
-                  onMouseEnter={(_, index) => setActiveIndex(index)}
-                  onMouseLeave={() => setActiveIndex(null)}
-                  activeShape={(props) => (
-                    <g>
-                      <text
-                        x={props.cx}
-                        y={props.cy}
-                        textAnchor="middle"
-                        fill="#fff"
-                        fontSize="14"
-                        fontWeight="600"
-                      >
-                        {props.name} ({props.value})
-                      </text>
-                      <Sector {...props} outerRadius={props.outerRadius + 10} />
-                    </g>
-                  )}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                      stroke="#1e293b"
-                      strokeWidth={2}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, name) => [`${value} jobs`, `${name}`]}
-                  contentStyle={{
-                    background: "#1e293b",
-                    borderRadius: "8px",
-                    border: "1px solid #2E9CCA",
-                    color: "#fff",
-                  }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  iconType="circle"
-                  wrapperStyle={{ color: "#f1f5f9", fontWeight: 500 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="form-actions">
-              <button className="job-btn-ghost" onClick={() => setShowStats(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ===== Announcements Drawer ===== */}
       {drawerOpen && (
@@ -505,24 +405,19 @@ export default function AdminJobs() {
                         {n.title || "Announcement"}
                       </span>
                       <span className="drawer-note-time">
-                        {n.createdAt?.toDate
+                        {n.pushedAt?.toDate
+                          ? n.pushedAt.toDate().toLocaleString()
+                          : n.createdAt?.toDate
                           ? n.createdAt.toDate().toLocaleString()
-                          : n.createdAt
-                          ? new Date(n.createdAt).toLocaleString()
                           : ""}
                       </span>
                     </div>
-                    <div className="drawer-note-body">
-                      {n.message || n.text || "—"}
-                    </div>
+                    <div className="drawer-note-body">{n.message || n.text || "—"}</div>
                     <div className="drawer-note-footer">
                       {n.pushed ? (
                         <span className="sent-chip">Sent</span>
                       ) : (
-                        <button
-                          className="push-btn"
-                          onClick={() => pushAnnouncement(n)}
-                        >
+                        <button className="push-btn" onClick={() => pushAnnouncement(n)}>
                           Push
                         </button>
                       )}
