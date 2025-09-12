@@ -7,9 +7,9 @@ import { useNavigate } from "react-router-dom";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { db } from "../firebase"; // ← if placed under /admin, change to "../../firebase"
-import AppHeader from "../components/AppHeader.jsx"; // ← if placed under /admin, change to "../../components/AppHeader.jsx"
-import "./Admin.css"; // optional: styles used by admin forms
+import { db } from "../../firebase.js"; // ← if placed under /admin, change to "../../firebase"
+import AppHeader from "../../components/AppHeader.jsx"; // ← if placed under /admin, change to "../../components/AppHeader.jsx"
+import "/src/styles/Admin.css"; // optional: styles used by admin forms
 
 export default function NewRecruiter() {
   const navigate = useNavigate();

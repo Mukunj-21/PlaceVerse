@@ -11,8 +11,8 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
-import "./Admin.css";
-import AppHeader from "../components/AppHeader.jsx";
+import "/src/styles/Admin.css";
+import AppHeader from "../../components/AppHeader.jsx";
 import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {

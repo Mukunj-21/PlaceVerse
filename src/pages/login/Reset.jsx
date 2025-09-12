@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../firebase";
-import "./Login.css"; // re-use the same clean card styles
+import { auth } from "../../firebase";
+import "/src/styles/Login.css"; // re-use the same clean card styles
 
 export default function Reset() {
   const [email, setEmail] = useState("");

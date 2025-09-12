@@ -152,10 +152,11 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth } from "../firebase";
-import AppHeader from "../components/AppHeader.jsx";
+import { auth } from "../../firebase.js";
+import AppHeader from "../../components/AppHeader.jsx";
 import { useNavigate } from "react-router-dom";
-import "./Student.css";
+// import "./Student.css";
+import "/src/styles/Student.css";
 
 export default function StudentProfile() {
   const [loading, setLoading] = useState(true);

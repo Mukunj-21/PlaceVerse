@@ -12,9 +12,9 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Link } from "react-router-dom";
-import { db } from "../firebase";
-import AppHeader from "../components/AppHeader.jsx";
-import "./Admin.css";
+import { db } from "../../firebase.js";
+import AppHeader from "../../components/AppHeader.jsx";
+import "/src/styles/Admin.css";
 
 // Recharts
 import {
