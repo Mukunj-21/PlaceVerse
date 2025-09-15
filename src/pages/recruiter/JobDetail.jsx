@@ -15,6 +15,7 @@ import {
   updateDoc
 } from "firebase/firestore";
 import "../../styles/Recruiter.css";
+import JobTimeline from "./JobTimeline";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -26,7 +27,7 @@ export default function JobDetail() {
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [applicationsCount, setApplicationsCount] = useState(0);
-  
+
   // Modal and form state
   const [showModal, setShowModal] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -42,10 +43,10 @@ export default function JobDetail() {
       try {
         const docRef = doc(db, "jobs", jobId);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           setJob({ id: docSnap.id, ...docSnap.data() });
-          
+
           // Load applications count
           const appsQuery = query(
             collection(db, "applications"),
@@ -70,7 +71,7 @@ export default function JobDetail() {
   useEffect(() => {
     const loadNotes = async () => {
       if (!jobId) return;
-      
+
       setNotesLoading(true);
       try {
         const notesQuery = query(
@@ -110,7 +111,7 @@ export default function JobDetail() {
       };
 
       const docRef = await addDoc(collection(db, "jobNotes"), payload);
-      
+
       // Optimistic update
       setNotes(prev => [
         { id: docRef.id, ...payload, createdAt: new Date() },
@@ -141,8 +142,8 @@ export default function JobDetail() {
       });
 
       // Update local state
-      setNotes(prev => prev.map(note => 
-        note.id === noteId 
+      setNotes(prev => prev.map(note =>
+        note.id === noteId
           ? { ...note, pushed: true, pushedAt: new Date() }
           : note
       ));
@@ -159,8 +160,8 @@ export default function JobDetail() {
   const formatDate = (timestamp) => {
     if (!timestamp) return "—";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
       hour: '2-digit',
@@ -218,14 +219,14 @@ export default function JobDetail() {
         {/* Job Header */}
         <div className="job-detail-header">
           <div className="header-top">
-            <button 
+            <button
               className="rec-btn rec-btn-ghost"
               onClick={() => navigate("/recruiter/jobs")}
             >
               ← Back to Jobs
             </button>
             <div className="header-actions">
-              <button 
+              <button
                 className="rec-btn"
                 onClick={() => navigate(`/recruiter/jobs/${jobId}/applicants`)}
               >
@@ -246,7 +247,7 @@ export default function JobDetail() {
                   </span>
                 )}
               </div>
-              
+
               <h1 className="job-detail-title">{job.title}</h1>
               <p className="job-detail-company">{job.company}</p>
 
@@ -286,16 +287,24 @@ export default function JobDetail() {
           </div>
         )}
 
+        {/* Timeline */}
+        <div className="content-section">
+          <JobTimeline />
+        </div>
+
         {/* Announcements Section */}
         <div className="content-section">
           <div className="section-header">
             <h2 className="rec-h2">Announcements</h2>
-            <button 
-              className="rec-btn"
-              onClick={() => setShowModal(true)}
-            >
-              ➕ New Announcement
-            </button>
+            {/* Show the header CTA only when there are existing notes */}
+            {!notesLoading && notes.length > 0 && (
+              <button
+                className="rec-btn"
+                onClick={() => setShowModal(true)}
+              >
+                ➕ New Announcement
+              </button>
+            )}
           </div>
 
           <div className="announcements-container">
@@ -308,61 +317,22 @@ export default function JobDetail() {
               <div className="empty-state">
                 <div className="empty-icon">📢</div>
                 <div className="empty-title">No Announcements Yet</div>
-                <div className="empty-text">Create your first announcement to communicate with applicants.</div>
+                <div className="empty-text">
+                  Create your first announcement to communicate with applicants.
+                </div>
+                {/* Only this CTA is shown when empty */}
                 <button className="rec-btn" onClick={() => setShowModal(true)}>
                   Create Announcement
                 </button>
               </div>
             ) : (
               <div className="announcements-grid">
-                {notes.map((note, index) => (
-                  <div 
-                    key={note.id} 
-                    className="announcement-card"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div className="announcement-header">
-                      <h3 className="announcement-title">{note.title}</h3>
-                      <div className="announcement-status">
-                        {note.pushed ? (
-                          <span className="status-pushed">✅ Pushed</span>
-                        ) : (
-                          <button
-                            className="rec-btn rec-btn-sm"
-                            onClick={() => handlePushNote(note.id)}
-                            disabled={pushingNote === note.id}
-                          >
-                            {pushingNote === note.id ? (
-                              <>
-                                <div className="spinner" style={{width: '12px', height: '12px', marginRight: '4px'}}></div>
-                                Pushing...
-                              </>
-                            ) : (
-                              '📤 Push to Students'
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <p className="announcement-message">{note.message}</p>
-                    
-                    <div className="announcement-footer">
-                      <span className="announcement-date">
-                        📅 {formatDate(note.createdAt)}
-                      </span>
-                      {note.pushed && (
-                        <span className="pushed-date">
-                          📤 Pushed: {formatDate(note.pushedAt)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {/* ...existing notes.map(...) */}
               </div>
             )}
           </div>
         </div>
+
 
         {/* Add Announcement Modal */}
         {showModal && (
@@ -370,8 +340,8 @@ export default function JobDetail() {
             <div className="modal job-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2 className="modal-title">New Announcement</h2>
-                <button 
-                  className="modal-close" 
+                <button
+                  className="modal-close"
                   onClick={() => setShowModal(false)}
                   disabled={saving}
                 >
@@ -423,7 +393,7 @@ export default function JobDetail() {
                   >
                     {saving ? (
                       <>
-                        <div className="spinner" style={{width: '16px', height: '16px', marginRight: '8px'}}></div>
+                        <div className="spinner" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
                         Creating...
                       </>
                     ) : (

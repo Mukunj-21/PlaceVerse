@@ -1,4 +1,3 @@
-// src/pages/recruiter/RecruiterJobs.jsx
 import { useState, useEffect } from "react";
 import { auth } from "../../firebase";
 import { 
@@ -34,6 +33,23 @@ export default function RecruiterJobs() {
   const [jDesc, setJDesc] = useState("");
   const [posting, setPosting] = useState(false);
   const [postMsg, setPostMsg] = useState("");
+
+  // ✅ Stages (Rounds)
+  const [stages, setStages] = useState([{ id: Date.now(), title: "" }]);
+
+  const addStage = () => {
+    setStages([...stages, { id: Date.now(), title: "" }]);
+  };
+
+  const removeStage = (id) => {
+    setStages(stages.filter(stage => stage.id !== id));
+  };
+
+  const updateStage = (id, value) => {
+    setStages(stages.map(stage =>
+      stage.id === id ? { ...stage, title: value } : stage
+    ));
+  };
   
   // Jobs list
   const [myJobs, setMyJobs] = useState([]);
@@ -72,7 +88,7 @@ export default function RecruiterJobs() {
         total,
         open,
         closed,
-        applications: 0 // You can calculate this from applications collection
+        applications: 0 // you can compute from applications collection
       });
       
     } catch (e) {
@@ -112,6 +128,14 @@ export default function RecruiterJobs() {
         createdAt: serverTimestamp(),
         open: true,
         adminStatus: "none",
+
+        // ✅ Save stages
+        stages: stages.map((s, idx) => ({
+          id: `stage${idx + 1}`,
+          title: s.title.trim(),
+          completed: false,
+          order: idx + 1,
+        }))
       });
 
       // Reset form
@@ -121,6 +145,7 @@ export default function RecruiterJobs() {
       setJCTC("");
       setJDeadline("");
       setJDesc("");
+      setStages([{ id: Date.now(), title: "" }]);
       setShowForm(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -177,27 +202,6 @@ export default function RecruiterJobs() {
     });
   };
 
-  const isDeadlineSoon = (deadline) => {
-    if (!deadline) return false;
-    const date = deadline.toDate ? deadline.toDate() : new Date(deadline);
-    const days = (date.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    return days >= 0 && days <= 3;
-  };
-
-  const renderSkeletonJobs = () => (
-    <>
-      {[1, 2, 3].map(i => (
-        <div key={i} className="skeleton-card">
-          <div className="skel skel-title"></div>
-          <div className="skel skel-line" style={{width: '60%'}}></div>
-          <div className="skel skel-line"></div>
-          <div className="skel skel-line" style={{width: '80%'}}></div>
-          <div className="skel skel-actions"></div>
-        </div>
-      ))}
-    </>
-  );
-
   return (
     <div className="recruiter-page">
       <div className="recruiter-wrap">
@@ -225,30 +229,6 @@ export default function RecruiterJobs() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="recruiter-stats">
-          <div className="stat-card">
-            <div className="stat-icon">💼</div>
-            <div className="stat-number">{stats.total}</div>
-            <div className="stat-label">Total Jobs</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🟢</div>
-            <div className="stat-number">{stats.open}</div>
-            <div className="stat-label">Open Positions</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🔒</div>
-            <div className="stat-number">{stats.closed}</div>
-            <div className="stat-label">Closed Positions</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">📈</div>
-            <div className="stat-number">{stats.applications}</div>
-            <div className="stat-label">Applications</div>
-          </div>
-        </div>
-
         {/* Filters */}
         <div className="filters-bar">
           <input
@@ -272,35 +252,18 @@ export default function RecruiterJobs() {
 
         {/* Jobs List */}
         <div className="jobs-grid">
-          {myJobsLoading ? (
-            renderSkeletonJobs()
-          ) : filteredJobs.length === 0 ? (
+          {filteredJobs.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">
-                {searchTerm || filterStatus !== "all" ? "🔍" : "💼"}
-              </div>
-              <div className="empty-title">
-                {searchTerm || filterStatus !== "all" ? "No matching jobs found" : "No jobs posted yet"}
-              </div>
-              <div className="empty-text">
-                {searchTerm || filterStatus !== "all" 
-                  ? "Try adjusting your search or filter criteria"
-                  : "Get started by posting your first job opportunity"
-                }
-              </div>
-              {!searchTerm && filterStatus === "all" && (
-                <button className="rec-btn" onClick={() => setShowForm(true)}>
-                  Post Your First Job
-                </button>
-              )}
+              <div className="empty-icon">💼</div>
+              <div className="empty-title">No jobs posted yet</div>
+              <div className="empty-text">Get started by posting your first job opportunity</div>
+              <button className="rec-btn" onClick={() => setShowForm(true)}>
+                Post Your First Job
+              </button>
             </div>
           ) : (
-            filteredJobs.map((job, index) => (
-              <div 
-                key={job.id} 
-                className="job-card-full"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
+            filteredJobs.map((job) => (
+              <div key={job.id} className="job-card-full">
                 <div className="job-card-header">
                   <div>
                     <h3 className="job-title">{job.title}</h3>
@@ -314,185 +277,89 @@ export default function RecruiterJobs() {
                 </div>
 
                 <div className="job-meta-grid">
-                  <div className="job-meta-item">
-                    <span className="meta-icon">📍</span>
-                    {job.location}
-                  </div>
-                  <div className="job-meta-item">
-                    <span className="meta-icon">💰</span>
-                    {job.ctc}
-                  </div>
-                  <div className="job-meta-item">
-                    <span className="meta-icon">⏰</span>
-                    Deadline: {formatDate(job.deadline)}
-                    {isDeadlineSoon(job.deadline) && <span style={{color: '#f59e0b'}}> (Soon!)</span>}
-                  </div>
-                  <div className="job-meta-item">
-                    <span className="meta-icon">📅</span>
-                    Posted: {formatDate(job.createdAt)}
-                  </div>
+                  <div className="job-meta-item">📍 {job.location}</div>
+                  <div className="job-meta-item">💰 {job.ctc}</div>
+                  <div className="job-meta-item">⏰ Deadline: {formatDate(job.deadline)}</div>
+                  <div className="job-meta-item">📅 Posted: {formatDate(job.createdAt)}</div>
                 </div>
 
-                {job.description && (
-                  <div className="job-description">
-                    {job.description}
-                  </div>
-                )}
-
                 <div className="job-actions-row">
-                  <button
-                    className="rec-btn rec-btn-sm"
-                    onClick={() => navigate(`/recruiter/jobs/${job.id}`)}
-                  >
-                    👁️ View Details
-                  </button>
-                  <button
-                    className="rec-btn rec-btn-sm"
-                    onClick={() => navigate(`/recruiter/jobs/${job.id}/applicants`)}
-                  >
-                    👥 View Applicants
-                  </button>
-                  <button
-                    className={`rec-btn rec-btn-sm ${job.open ? 'rec-btn-danger' : 'rec-btn-success'}`}
-                    onClick={() => toggleOpen(job)}
-                  >
+                  <button className="rec-btn rec-btn-sm" onClick={() => navigate(`/recruiter/jobs/${job.id}`)}>👁️ View Details</button>
+                  <button className={`rec-btn rec-btn-sm ${job.open ? 'rec-btn-danger' : 'rec-btn-success'}`} onClick={() => toggleOpen(job)}>
                     {job.open ? '🔒 Close' : '🟢 Open'}
                   </button>
-                  <button
-                    className="rec-btn rec-btn-sm rec-btn-danger"
-                    onClick={() => deleteJob(job)}
-                  >
-                    🗑️ Delete
-                  </button>
+                  <button className="rec-btn rec-btn-sm rec-btn-danger" onClick={() => deleteJob(job)}>🗑️ Delete</button>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Floating Action Button */}
-        <button className="fab" onClick={() => setShowForm(true)}>
-          <span className="fab-icon">+</span>
-          <span className="fab-text">Add New Job</span>
-        </button>
-
-        {/* Enhanced Modal */}
+        {/* Modal */}
         {showForm && (
           <div className="modal-overlay" onClick={() => setShowForm(false)}>
             <div className="modal job-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2 className="modal-title">Create New Job</h2>
-                <button className="modal-close" onClick={() => setShowForm(false)}>
-                  ×
-                </button>
+                <button className="modal-close" onClick={() => setShowForm(false)}>×</button>
               </div>
 
               <form onSubmit={onPostJob}>
                 <div className="job-form-grid">
                   <div className="form-row">
                     <label htmlFor="title">Job Title *</label>
-                    <input
-                      id="title"
-                      type="text"
-                      value={jTitle}
-                      onChange={(e) => setJTitle(e.target.value)}
-                      className="job-input"
-                      placeholder="e.g. Senior Software Engineer"
-                      required
-                    />
+                    <input id="title" type="text" value={jTitle} onChange={(e) => setJTitle(e.target.value)} className="job-input" required />
                   </div>
-
                   <div className="form-row">
                     <label htmlFor="company">Company</label>
-                    <input
-                      id="company"
-                      type="text"
-                      value={jCompany}
-                      onChange={(e) => setJCompany(e.target.value)}
-                      className="job-input"
-                      placeholder="e.g. Tech Corp"
-                    />
+                    <input id="company" type="text" value={jCompany} onChange={(e) => setJCompany(e.target.value)} className="job-input" />
                   </div>
-
                   <div className="form-row">
                     <label htmlFor="location">Location *</label>
-                    <input
-                      id="location"
-                      type="text"
-                      value={jLocation}
-                      onChange={(e) => setJLocation(e.target.value)}
-                      className="job-input"
-                      placeholder="e.g. San Francisco, CA"
-                      required
-                    />
+                    <input id="location" type="text" value={jLocation} onChange={(e) => setJLocation(e.target.value)} className="job-input" required />
                   </div>
-
                   <div className="form-row">
                     <label htmlFor="ctc">CTC/Salary</label>
-                    <input
-                      id="ctc"
-                      type="text"
-                      value={jCTC}
-                      onChange={(e) => setJCTC(e.target.value)}
-                      className="job-input"
-                      placeholder="e.g. $80,000 - $120,000"
-                    />
+                    <input id="ctc" type="text" value={jCTC} onChange={(e) => setJCTC(e.target.value)} className="job-input" />
                   </div>
-
                   <div className="form-row">
                     <label htmlFor="deadline">Application Deadline *</label>
-                    <input
-                      id="deadline"
-                      type="date"
-                      value={jDeadline}
-                      onChange={(e) => setJDeadline(e.target.value)}
-                      className="job-input"
-                      min={new Date().toISOString().split('T')[0]}
-                      required
-                    />
+                    <input id="deadline" type="date" value={jDeadline} onChange={(e) => setJDeadline(e.target.value)} className="job-input" required />
                   </div>
 
                   <div className="form-row full-width">
                     <label htmlFor="description">Job Description</label>
-                    <textarea
-                      id="description"
-                      value={jDesc}
-                      onChange={(e) => setJDesc(e.target.value)}
-                      className="job-textarea"
-                      placeholder="Describe the role, requirements, and what you're looking for in candidates..."
-                      rows="6"
-                    />
+                    <textarea id="description" value={jDesc} onChange={(e) => setJDesc(e.target.value)} className="job-textarea" rows="4" />
+                  </div>
+
+                  {/* ✅ Stages Input */}
+                  <div className="form-row full-width">
+                    <label>Recruitment Rounds / Stages</label>
+                    {stages.map((stage, index) => (
+                      <div key={stage.id} className="stage-row">
+                        <input
+                          type="text"
+                          value={stage.title}
+                          onChange={(e) => updateStage(stage.id, e.target.value)}
+                          placeholder={`Stage ${index + 1} (e.g., Online Assessment)`}
+                          className="job-input"
+                          required
+                        />
+                        {stages.length > 1 && (
+                          <button type="button" className="rec-btn-sm rec-btn-danger" onClick={() => removeStage(stage.id)}>✖</button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" className="rec-btn-sm rec-btn-outline" onClick={addStage}>➕ Add Stage</button>
                   </div>
                 </div>
 
-                {postMsg && (
-                  <div style={{ color: '#ef4444', marginTop: '16px', textAlign: 'center' }}>
-                    {postMsg}
-                  </div>
-                )}
+                {postMsg && <div style={{ color: "red", textAlign: "center" }}>{postMsg}</div>}
 
                 <div className="form-actions">
-                  <button
-                    type="button"
-                    className="rec-btn rec-btn-outline"
-                    onClick={() => setShowForm(false)}
-                    disabled={posting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rec-btn"
-                    disabled={posting}
-                  >
-                    {posting ? (
-                      <>
-                        <div className="spinner" style={{width: '16px', height: '16px', marginRight: '8px'}}></div>
-                        Posting...
-                      </>
-                    ) : (
-                      '🚀 Post Job'
-                    )}
+                  <button type="button" className="rec-btn rec-btn-outline" onClick={() => setShowForm(false)} disabled={posting}>Cancel</button>
+                  <button type="submit" className="rec-btn" disabled={posting}>
+                    {posting ? "Posting..." : "🚀 Post Job"}
                   </button>
                 </div>
               </form>
