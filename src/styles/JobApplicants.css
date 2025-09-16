@@ -1,19 +1,296 @@
-.applicants-page {
-  padding: 1rem;
+/* Enhanced Filters Toolbar */
+.filters-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 12px;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.applicant-detail {
-  background: #1e293b;
-  padding: 1rem;
+/* Input Fields */
+.filter-input {
+  padding: 0.625rem 1rem;
+  border: 1px solid #475569;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.875rem;
+  min-width: 180px;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.filter-input.small {
+  min-width: 120px;
+}
+
+.filter-input::placeholder {
+  color: #64748b;
+}
+
+/* Select Dropdowns */
+.filter-select {
+  padding: 0.625rem 1rem;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.875rem;
+  min-width: 140px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+}
+
+.filter-select:hover {
+  border-color: #64748b;
+}
+
+/* Checkbox Filter */
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.filter-checkbox:hover {
+  background: rgba(56, 189, 248, 0.1);
   color: #f8fafc;
 }
 
-.applicant-detail a {
-  color: #60a5fa;
-  text-decoration: none;
+.filter-checkbox input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: #38bdf8;
+  cursor: pointer;
 }
-.applicant-detail a:hover {
+
+/* Action Buttons */
+.btn-outline, .btn-primary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-outline {
+  border: 1px solid #38bdf8;
+  background: transparent;
+  color: #38bdf8;
+}
+
+.btn-outline:hover {
+  background: #38bdf8;
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(56, 189, 248, 0.3);
+}
+
+.btn-outline:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: none;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
+}
+
+.btn-primary:disabled {
+  background: #374151;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Enhanced Table Styles */
+.applicants-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #334155;
+}
+
+.applicants-table th, .applicants-table td {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #334155;
+  color: #f8fafc;
+}
+
+.applicants-table th {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: #cbd5e1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.applicants-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.applicants-table tbody tr:hover {
+  background: #273449;
+  transform: scale(1.001);
+}
+
+.applicants-table tbody tr:nth-child(even) {
+  background: rgba(30, 41, 59, 0.3);
+}
+
+.applicants-table tbody tr:nth-child(even):hover {
+  background: #273449;
+}
+
+.empty-row {
+  text-align: center;
+  color: #94a3b8;
+  padding: 3rem;
+  font-style: italic;
+}
+
+/* Status Select in Table */
+.status-select {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1);
+}
+
+.status-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Resume Link Styling */
+.applicants-table a {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.applicants-table a:hover {
+  color: #0ea5e9;
   text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .filters-toolbar {
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .filter-input, .filter-select {
+    min-width: 120px;
+    font-size: 0.8rem;
+  }
+  
+  .btn-outline, .btn-primary {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .applicants-table {
+    font-size: 0.875rem;
+  }
+  
+  .applicants-table th, .applicants-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* Loading and transition states */
+.filters-toolbar * {
+  transition: all 0.2s ease;
+}
+
+/* Focus ring for accessibility */
+.filter-input:focus,
+.filter-select:focus,
+.filter-checkbox:focus-within,
+.btn-outline:focus,
+.btn-primary:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filters-toolbar {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.applicants-table {
+  animation: fadeIn 0.4s ease-out;
 }

@@ -1,3 +1,5 @@
+// src/pages/recruiter/RecruiterLayout.jsx
+
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";

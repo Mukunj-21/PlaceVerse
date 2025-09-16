@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 // Public
 import Login from "./pages/login/Login.jsx";
 import Reset from "./pages/login/Reset.jsx";
+import FinishEmailLink from "./pages/login/FinishEmailLink.jsx";
 
 // Shared/Guards
 import NotAuthorized from "./pages/login/NotAuthorized.jsx";
@@ -13,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminJobs from "./pages/admin/AdminJobs.jsx";
 import NewRecruiter from "./pages/admin/NewRecruiter.jsx";
+import AdminJobDetail from "./pages/admin/AdminJobDetail.jsx"; // ✅ NEW
 
 // Recruiter (nested)
 import RecruiterLayout from "./pages/recruiter/RecruiterLayout.jsx";
@@ -21,6 +23,7 @@ import RecruiterJobs from "./pages/recruiter/RecruiterJobs";
 import RecruiterApplicants from "./pages/recruiter/RecruiterApplicants";
 import JobDetail from "./pages/recruiter/JobDetail.jsx";
 import JobApplicants from "./pages/recruiter/JobApplicants.jsx";
+import StageDetail from "./pages/recruiter/StageDetail"; // role-aware (admin/recruiter/student)
 
 // Student
 import StudentDashboard from "./pages/student/StudentDashboard.jsx";
@@ -28,21 +31,18 @@ import StudentProfile from "./pages/student/StudentProfile.jsx";
 import StudentApplications from "./pages/student/StudentApplications.jsx";
 import StudentNotifications from "./pages/student/StudentNotifications.jsx";
 
-// Optional: Finish email-link auth (create if using email-link sign-in)
-import FinishEmailLink from "./pages/login/FinishEmailLink.jsx";
-
 export default function App() {
   return (
     <Routes>
-      {/* default → go to /login */}
+      {/* Default → go to /login */}
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* public */}
+      {/* Public */}
       <Route path="/login" element={<Login />} />
       <Route path="/reset" element={<Reset />} />
       <Route path="/finish-signin" element={<FinishEmailLink />} />
 
-      {/* admin */}
+      {/* ===================== ADMIN ===================== */}
       <Route
         path="/admin"
         element={
@@ -67,6 +67,16 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      {/* Admin: Job Detail (timeline + stages) */}
+      <Route
+        path="/admin/jobs/:jobId"
+        element={
+          <ProtectedRoute allow={["admin"]}>
+            <AdminJobDetail />
+          </ProtectedRoute>
+        }
+      />
+      {/* Admin: Applicants for a specific job */}
       <Route
         path="/admin/jobs/:jobId/applications"
         element={
@@ -75,8 +85,59 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      {/* Admin: Stage Detail (role-aware component) */}
+      <Route
+        path="/admin/jobs/:jobId/stage/:stageId"
+        element={
+          <ProtectedRoute allow={["admin"]}>
+            <StageDetail />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* student */}
+      {/* ===================== RECRUITER ===================== */}
+      <Route
+        path="/recruiter"
+        element={
+          <ProtectedRoute allow={["recruiter"]}>
+            <RecruiterLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="profile" replace />} />
+        <Route path="profile" element={<RecruiterProfile />} />
+        <Route path="jobs" element={<RecruiterJobs />} />
+        <Route path="applicants" element={<RecruiterApplicants />} />
+      </Route>
+
+      {/* Recruiter: Job Detail + Applicants */}
+      <Route
+        path="/recruiter/jobs/:jobId"
+        element={
+          <ProtectedRoute allow={["recruiter"]}>
+            <JobDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recruiter/jobs/:jobId/applicants"
+        element={
+          <ProtectedRoute allow={["recruiter"]}>
+            <JobApplicants />
+          </ProtectedRoute>
+        }
+      />
+      {/* Recruiter: Stage Detail (role-aware) */}
+      <Route
+        path="/recruiter/jobs/:jobId/stage/:stageId"
+        element={
+          <ProtectedRoute allow={["recruiter"]}>
+            <StageDetail />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ===================== STUDENT ===================== */}
       <Route
         path="/student"
         element={
@@ -109,44 +170,20 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
-      {/* recruiter (nested) */}
+      {/* Student: Stage Detail (read-only unless published) */}
       <Route
-        path="/recruiter"
+        path="/student/jobs/:jobId/stage/:stageId"
         element={
-          <ProtectedRoute allow={["recruiter"]}>
-            <RecruiterLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="profile" replace />} />
-        <Route path="profile" element={<RecruiterProfile />} />
-        <Route path="jobs" element={<RecruiterJobs />} />
-        <Route path="applicants" element={<RecruiterApplicants />} />
-      </Route>
-
-      {/* recruiter job detail + applicants */}
-      <Route
-        path="/recruiter/jobs/:jobId"
-        element={
-          <ProtectedRoute allow={["recruiter"]}>
-            <JobDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/recruiter/jobs/:jobId/applicants"
-        element={
-          <ProtectedRoute allow={["recruiter"]}>
-            <JobApplicants />
+          <ProtectedRoute allow={["student"]}>
+            <StageDetail />
           </ProtectedRoute>
         }
       />
 
-      {/* misc */}
+      {/* Misc */}
       <Route path="/not-authorized" element={<NotAuthorized />} />
 
-      {/* catch-all */}
+      {/* Catch-all */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
