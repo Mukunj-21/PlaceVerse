@@ -8,11 +8,9 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   addDoc,
-  serverTimestamp,
-  updateDoc
+  serverTimestamp
 } from "firebase/firestore";
 import "../../styles/Recruiter.css";
 import JobTimeline from "./JobTimeline";
@@ -21,22 +19,21 @@ export default function JobDetail() {
   const { jobId } = useParams();
   const navigate = useNavigate();
 
-  // State management
+  // State
   const [job, setJob] = useState(null);
   const [jobLoading, setJobLoading] = useState(true);
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [applicationsCount, setApplicationsCount] = useState(0);
 
-  // Modal and form state
+  // Modal / form
   const [showModal, setShowModal] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newNote, setNewNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [pushingNote, setPushingNote] = useState(null);
 
-  // Load job details
+  // Load job + applications count
   useEffect(() => {
     const loadJob = async () => {
       setJobLoading(true);
@@ -47,7 +44,6 @@ export default function JobDetail() {
         if (docSnap.exists()) {
           setJob({ id: docSnap.id, ...docSnap.data() });
 
-          // Load applications count
           const appsQuery = query(
             collection(db, "applications"),
             where("jobId", "==", jobId)
@@ -67,21 +63,25 @@ export default function JobDetail() {
     if (jobId) loadJob();
   }, [jobId]);
 
-  // Load announcements
+  // Load announcements for this job (no composite index required)
   useEffect(() => {
     const loadNotes = async () => {
       if (!jobId) return;
 
       setNotesLoading(true);
       try {
-        const notesQuery = query(
-          collection(db, "jobNotes"),
-          where("jobId", "==", jobId),
-          orderBy("createdAt", "desc")
-        );
-        const notesSnap = await getDocs(notesQuery);
-        const fetchedNotes = notesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setNotes(fetchedNotes);
+        const qNotes = query(collection(db, "jobNotes"), where("jobId", "==", jobId));
+        const snap = await getDocs(qNotes);
+        const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // newest → oldest
+        arr.sort((a, b) => {
+          const da = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+          const dbb = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+          return dbb - da;
+        });
+
+        setNotes(arr);
       } catch (err) {
         console.error("Error loading announcements:", err);
         setNotes([]);
@@ -93,7 +93,7 @@ export default function JobDetail() {
     loadNotes();
   }, [jobId]);
 
-  // Add new announcement
+  // Add announcement (recruiter can create; admin will publish)
   const handleAddNote = async (e) => {
     e.preventDefault();
     if (!newTitle.trim() && !newNote.trim()) return;
@@ -112,7 +112,7 @@ export default function JobDetail() {
 
       const docRef = await addDoc(collection(db, "jobNotes"), payload);
 
-      // Optimistic update
+      // Optimistic UI
       setNotes(prev => [
         { id: docRef.id, ...payload, createdAt: new Date() },
         ...prev
@@ -123,7 +123,6 @@ export default function JobDetail() {
       setShowModal(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-
     } catch (err) {
       console.error("Error adding announcement:", err);
       alert("Failed to add announcement ❌");
@@ -132,40 +131,16 @@ export default function JobDetail() {
     }
   };
 
-  // Push announcement to students
-  const handlePushNote = async (noteId) => {
-    setPushingNote(noteId);
-    try {
-      await updateDoc(doc(db, "jobNotes", noteId), {
-        pushed: true,
-        pushedAt: serverTimestamp()
-      });
-
-      // Update local state
-      setNotes(prev => prev.map(note =>
-        note.id === noteId
-          ? { ...note, pushed: true, pushedAt: new Date() }
-          : note
-      ));
-
-    } catch (err) {
-      console.error("Error pushing announcement:", err);
-      alert("Failed to push announcement ❌");
-    } finally {
-      setPushingNote(null);
-    }
-  };
-
-  // Helper functions
+  // Helpers
   const formatDate = (timestamp) => {
     if (!timestamp) return "—";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -196,7 +171,9 @@ export default function JobDetail() {
           <div className="empty-state">
             <div className="empty-icon">⚠️</div>
             <div className="empty-title">Job Not Found</div>
-            <div className="empty-text">The job you're looking for doesn't exist or has been removed.</div>
+            <div className="empty-text">
+              The job you're looking for doesn't exist or has been removed.
+            </div>
             <button className="rec-btn" onClick={() => navigate("/recruiter/jobs")}>
               ← Back to Jobs
             </button>
@@ -216,7 +193,7 @@ export default function JobDetail() {
           </div>
         )}
 
-        {/* Job Header */}
+        {/* Header */}
         <div className="job-detail-header">
           <div className="header-top">
             <button
@@ -238,13 +215,11 @@ export default function JobDetail() {
           <div className="job-detail-card">
             <div className="job-detail-main">
               <div className="job-status-row">
-                <span className={`job-status-pill ${job.open ? 'pill-open' : 'pill-closed'}`}>
-                  {job.open ? '🟢 Open' : '🔒 Closed'}
+                <span className={`job-status-pill ${job.open ? "pill-open" : "pill-closed"}`}>
+                  {job.open ? "🟢 Open" : "🔒 Closed"}
                 </span>
                 {isDeadlineSoon(job.deadline) && (
-                  <span className="deadline-warning">
-                    ⚠️ Deadline Soon!
-                  </span>
+                  <span className="deadline-warning">⚠️ Deadline Soon!</span>
                 )}
               </div>
 
@@ -277,7 +252,7 @@ export default function JobDetail() {
           </div>
         </div>
 
-        {/* Job Description */}
+        {/* Description */}
         {job.description && (
           <div className="content-section">
             <h2 className="rec-h2">Job Description</h2>
@@ -292,16 +267,12 @@ export default function JobDetail() {
           <JobTimeline />
         </div>
 
-        {/* Announcements Section */}
+        {/* Announcements */}
         <div className="content-section">
           <div className="section-header">
             <h2 className="rec-h2">Announcements</h2>
-            {/* Show the header CTA only when there are existing notes */}
             {!notesLoading && notes.length > 0 && (
-              <button
-                className="rec-btn"
-                onClick={() => setShowModal(true)}
-              >
+              <button className="rec-btn" onClick={() => setShowModal(true)}>
                 ➕ New Announcement
               </button>
             )}
@@ -320,21 +291,59 @@ export default function JobDetail() {
                 <div className="empty-text">
                   Create your first announcement to communicate with applicants.
                 </div>
-                {/* Only this CTA is shown when empty */}
                 <button className="rec-btn" onClick={() => setShowModal(true)}>
                   Create Announcement
                 </button>
               </div>
             ) : (
               <div className="announcements-grid">
-                {/* ...existing notes.map(...) */}
+                {notes.map((note, index) => (
+                  <div
+                    key={note.id}
+                    className="announcement-card"
+                    style={{ animationDelay: `${index * 0.08}s` }}
+                  >
+                    <div className="announcement-header">
+                      <h3 className="announcement-title">{note.title || "Announcement"}</h3>
+                      <div className="announcement-status">
+                        {note.pushed ? (
+                          <span className="status-pushed">✅ Published</span>
+                        ) : (
+                          <span
+                            className="status-pending"
+                            title="Only admins can publish announcements"
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              background: "#334155",
+                              color: "#e5e7eb",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              display: "inline-block",
+                            }}
+                          >
+                            ⌛ Pending (admin publish only)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="announcement-message">{note.message}</p>
+
+                    <div className="announcement-footer">
+                      <span className="announcement-date">📅 {formatDate(note.createdAt)}</span>
+                      {note.pushed && (
+                        <span className="pushed-date">📤 Pushed: {formatDate(note.pushedAt)}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
 
-
-        {/* Add Announcement Modal */}
+        {/* New Announcement Modal */}
         {showModal && (
           <div className="modal-overlay" onClick={() => !saving && setShowModal(false)}>
             <div className="modal job-modal" onClick={(e) => e.stopPropagation()}>
@@ -386,18 +395,14 @@ export default function JobDetail() {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="rec-btn"
-                    disabled={saving || !newNote.trim()}
-                  >
+                  <button type="submit" className="rec-btn" disabled={saving || !newNote.trim()}>
                     {saving ? (
                       <>
-                        <div className="spinner" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
+                        <div className="spinner" style={{ width: "16px", height: "16px", marginRight: "8px" }}></div>
                         Creating...
                       </>
                     ) : (
-                      '📢 Create Announcement'
+                      "📢 Create Announcement"
                     )}
                   </button>
                 </div>
